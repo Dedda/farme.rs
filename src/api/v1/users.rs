@@ -1,14 +1,15 @@
-use std::collections::HashMap;
-use std::io::Cursor;
-use crate::data::user::{NewUser, User};
+use crate::data::user::{self, NewUser, User};
 use crate::data::FarmDB;
 use crate::ident::LoginCredentials;
+use crate::mailing::{EmailError, EmailService, EmailValidationRequest};
 use rocket::http::Status;
 use rocket::response::Responder;
 use rocket::serde::json::Json;
-use rocket::{post, response, routes, Request, Response};
 use rocket::serde::Serialize;
+use rocket::{post, response, routes, Request, Response, State};
 use serde::Deserialize;
+use std::collections::HashMap;
+use std::io::Cursor;
 
 pub fn routes() -> Vec<rocket::Route> {
     routes![login_jwt, create_user]
@@ -68,15 +69,27 @@ impl From<diesel::result::Error> for NewUserError {
     }
 }
 
+impl From<EmailError> for NewUserError {
+    fn from(_value: EmailError) -> Self {
+        Self {
+            message: "Email error".to_string(),
+            invalid_fields: HashMap::new(),
+            status: Status::InternalServerError,
+        }
+    }
+}
+
 #[post("/login-jwt", data = "<credentials>")]
 async fn login_jwt(db: FarmDB, credentials: Json<LoginCredentials>) -> crate::api::Result<Option<String>> {
     crate::ident::login_jwt(db, credentials).await
 }
 
 #[post("/create", data = "<user>")]
-async fn create_user(db: FarmDB, user: Json<NewApiUser>) -> Result<Json<User>, NewUserError> {
+async fn create_user(db: FarmDB, email: &State<EmailService>, user: Json<NewApiUser>) -> Result<Json<User>, NewUserError> {
     user.validate()?;
     let password = user.password.clone();
-    let user = crate::data::user::create_user(db, user.0.into(), password).await?;
+    let user = user::create_user(db, user.0.into(), password).await?;
+    let validation_request = EmailValidationRequest::new(String::new(), &user);
+    email.send_validation_request(validation_request)?;
     Ok(Json(user))
 }
