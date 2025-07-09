@@ -1,20 +1,8 @@
 use crate::data::user::User;
-use handlebars::{Handlebars, RenderError};
-use lazy_static::lazy_static;
+use askama::Template;
 use lettre::{message::{header::ContentType, Mailbox}, transport::smtp::authentication::Credentials, Address, Message, SmtpTransport, Transport};
-use serde_json::json;
 use std::env;
 use std::str::FromStr;
-
-pub const EMAIL_VALIDATION: &str = "email-validation";
-
-lazy_static! {
-    static ref TEMPLATES: Handlebars<'static> = {
-        let mut hbs = Handlebars::new();
-        hbs.register_template_string(EMAIL_VALIDATION, include_str!("templates/email_validation.hbs.html")).expect("Failed to parse email-validation");
-        hbs
-    };
-}
 
 #[derive(Debug)]
 pub enum EmailError {
@@ -25,7 +13,7 @@ pub enum EmailError {
         mail_err: lettre::error::Error,
     },
     Template {
-        tmpl_err: RenderError,
+        tmpl_err: askama::Error,
     },
 }
 
@@ -39,6 +27,24 @@ impl<'u> EmailValidationRequest<'u> {
         Self {
             validation_code,
             user,
+        }
+    }
+}
+
+#[derive(askama::Template)]
+#[template(path = "email_validation.html")]
+struct EmailValidationTemplate<'u> {
+    username: &'u String,
+    validation_link: String,
+}
+
+impl<'u> From<EmailValidationRequest<'u>> for EmailValidationTemplate<'u> {
+    fn from(value: EmailValidationRequest<'u>) -> Self {
+        let host = env::var("HOSTNAME").unwrap_or("localhost".to_string());
+        let link = format!("{}/validate?code={}", &host, value.validation_code);
+        Self {
+            username: &value.user.username,
+            validation_link: link,
         }
     }
 }
@@ -60,11 +66,9 @@ impl EmailService {
     }
 
     pub fn send_validation_request(&self, request: EmailValidationRequest) -> Result<(), EmailError> {
-        let host = env::var("HOSTNAME").unwrap_or("localhost".to_string());
-        let link = format!("{}/validate?code={}", &host, request.validation_code);
-        let ctx = json!({"username": &request.user.username, "validation_link": &link});
-        let contents = TEMPLATES.render(EMAIL_VALIDATION, &ctx)?;
         let recipient = Mailbox::new(Some(request.user.username.clone()), Address::from_str(&request.user.email).unwrap());
+        let template: EmailValidationTemplate = request.into();
+        let contents = template.render()?;
         let subject = "Farme.rs: Validate Email".to_string();
         self.send_mail(recipient, subject, contents, ContentType::TEXT_HTML)
     }
@@ -105,8 +109,8 @@ impl From<lettre::error::Error> for EmailError {
     }
 }
 
-impl From<RenderError> for EmailError {
-    fn from(value: RenderError) -> Self {
+impl From<askama::Error> for EmailError {
+    fn from(value: askama::Error) -> Self {
         EmailError::Template {
             tmpl_err: value,
         }
