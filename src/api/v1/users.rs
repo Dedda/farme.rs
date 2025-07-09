@@ -1,20 +1,20 @@
-use std::collections::HashMap;
-use std::io::Cursor;
 use crate::data::user::{NewUser, User};
 use crate::data::FarmDB;
 use crate::ident::LoginCredentials;
 use rocket::http::Status;
 use rocket::response::Responder;
 use rocket::serde::json::Json;
-use rocket::{post, response, routes, Request, Response};
 use rocket::serde::Serialize;
+use rocket::{post, response, routes, Request, Response};
 use serde::Deserialize;
+use std::collections::HashMap;
+use std::io::Cursor;
 
 pub fn routes() -> Vec<rocket::Route> {
     routes![login_jwt, create_user]
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
 struct NewApiUser {
     pub firstname: String,
@@ -79,4 +79,33 @@ async fn create_user(db: FarmDB, user: Json<NewApiUser>) -> Result<Json<User>, N
     let password = user.password.clone();
     let user = crate::data::user::create_user(db, user.0.into(), password).await?;
     Ok(Json(user))
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{api::v1::users::NewApiUser, data::user::User};
+    use rocket::http::{ContentType, Status};
+    use rocket::local::blocking::Client;
+
+    #[test]
+    fn crud_user() {
+        let rocket = crate::rocket();
+        let mut client = Client::tracked(rocket).expect("valid rocket instance");
+        let new_api_user = NewApiUser {
+            firstname: "Firstuser".to_string(),
+            lastname: "Lastuser".to_string(),
+            username: "testusername".to_string(),
+            email: "test@test.com".to_string(),
+            password: "na9e8#aKsd".to_string(),
+        };
+        let req = client.post("/api/v1/users/create");
+        let response = req.body(serde_json::to_string(&new_api_user).expect("failed to serialize user")).dispatch();
+        assert_eq!(response.status(), Status::Ok);
+        assert_eq!(response.content_type(), Some(ContentType::JSON));
+        let user: User = response.into_json().expect("failed to deserialize json");
+        assert_eq!(user.firstname, "Firstuser");
+        assert_eq!(user.lastname, "Lastuser");
+        assert_eq!(user.username, "testusername");
+        assert_eq!(user.email, "test@test.com");
+    }
 }

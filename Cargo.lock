@@ -512,6 +512,7 @@ dependencies = [
  "rocket_cors",
  "rocket_sync_db_pools",
  "serde",
+ "serde_json",
 ]
 
 [[package]]

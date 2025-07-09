@@ -7,7 +7,7 @@ use argon2::{Argon2, PasswordHasher, PasswordVerifier};
 use diesel::prelude::*;
 use rocket::serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Selectable, Identifiable, Queryable)]
+#[derive(Serialize, Deserialize, Selectable, Identifiable, Queryable)]
 #[serde(crate = "rocket::serde")]
 pub struct User {
     pub id: i32,
