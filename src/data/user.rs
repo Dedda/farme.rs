@@ -72,7 +72,7 @@ pub async fn create_user(db: FarmDB, user: NewUser, password: String) -> QueryRe
     }).await
 }
 
-pub async fn check_login(db: FarmDB, username: String, password: String) -> QueryResult<bool> {
+pub async fn check_login(db: &FarmDB, username: String, password: String) -> QueryResult<bool> {
     let hash: String = db.run(move |conn| {
         users::table
             .select(users::password)

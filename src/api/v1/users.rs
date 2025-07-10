@@ -83,14 +83,22 @@ async fn create_user(db: FarmDB, user: Json<NewApiUser>) -> Result<Json<User>, N
 
 #[cfg(test)]
 mod tests {
+    use crate::data::FarmDB;
     use crate::{api::v1::users::NewApiUser, data::user::User};
+    use diesel::{ExpressionMethods, RunQueryDsl};
     use rocket::http::{ContentType, Status};
-    use rocket::local::blocking::Client;
+    use rocket::local::asynchronous::Client;
+    use crate::data::user::check_login;
 
-    #[test]
-    fn crud_user() {
-        let rocket = crate::rocket();
-        let mut client = Client::tracked(rocket).expect("valid rocket instance");
+    #[tokio::test]
+    async fn create_user() {
+        let rocket = crate::rocket()
+            .ignite()
+            .await
+            .expect("cannot launch rocket");
+        let client = Client::untracked(rocket)
+            .await
+            .expect("valid rocket instance");
         let new_api_user = NewApiUser {
             firstname: "Firstuser".to_string(),
             lastname: "Lastuser".to_string(),
@@ -99,13 +107,28 @@ mod tests {
             password: "na9e8#aKsd".to_string(),
         };
         let req = client.post("/api/v1/users/create");
-        let response = req.body(serde_json::to_string(&new_api_user).expect("failed to serialize user")).dispatch();
+        let response = req
+            .body(serde_json::to_string(&new_api_user).expect("failed to serialize user"))
+            .dispatch().await;
         assert_eq!(response.status(), Status::Ok);
         assert_eq!(response.content_type(), Some(ContentType::JSON));
-        let user: User = response.into_json().expect("failed to deserialize json");
+        let user: User = response.into_json().await.expect("failed to deserialize json");
         assert_eq!(user.firstname, "Firstuser");
         assert_eq!(user.lastname, "Lastuser");
         assert_eq!(user.username, "testusername");
         assert_eq!(user.email, "test@test.com");
+        let id = user.id;
+        let db = FarmDB::get_one(client.rocket()).await.expect("failed to get db");
+        let password_check = check_login(&db, new_api_user.username, new_api_user.password)
+            .await
+            .expect("failed to check user login");
+        assert!(password_check);
+        // Delete created user
+        db.run(move |conn| {
+            diesel::delete(crate::schema::users::table)
+                .filter(crate::schema::users::id.eq(id))
+                .execute(conn)
+                .expect("Cannot delete user");
+        }).await;
     }
 }
