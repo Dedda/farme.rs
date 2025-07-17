@@ -1,6 +1,7 @@
 use crate::data::user::{NewUser, User};
 use crate::data::FarmDB;
 use crate::ident::LoginCredentials;
+use crate::validation::{RegexValidator, RequiredCharacterGroupCriteria, StringCriteria, StringLengthCriteria, StringValidator, Validator};
 use rocket::http::Status;
 use rocket::response::Responder;
 use rocket::serde::json::Json;
@@ -37,7 +38,84 @@ impl From<NewApiUser> for NewUser {
 
 impl NewApiUser {
     pub fn validate(&self) -> Result<(), NewUserError> {
-        Ok(())
+        let mut errors = HashMap::new();
+        if let Some(err) = self.validate_password() {
+            errors.insert("password".to_string(), err);
+        }
+        if let Some(err) = self.validate_email() {
+            errors.insert("email".to_string(), err);
+        }
+        if let Some(err) = self.validate_username() {
+            errors.insert("username".to_string(), err);
+        }
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(NewUserError {
+                message: "validation error".to_string(),
+                invalid_fields: errors,
+                status: Status::BadRequest,
+            })
+        }
+    }
+
+    fn validate_username(&self) -> Option<Vec<String>> {
+        let mut validator = StringValidator::new();
+        validator.add_criteria(StringLengthCriteria::min(3));
+        if let Err(err) =  validator.validate(&self.password) {
+            return Some(err.messages);
+        }
+        if self.username.chars().any(|c| !c.is_alphanumeric()) {
+            return Some(vec!["Only letters and numbers allowed".to_string()]);
+        }
+        if !self.username.chars().next().unwrap().is_alphabetic() {
+            return Some(vec!["Has to begin with a letter".to_string()]);
+        }
+        None
+    }
+
+    fn validate_email(&self) -> Option<Vec<String>> {
+        let validatpr = RegexValidator::new(include_str!("email_regex.txt")).expect("Cannot parse email regex");
+        if let Err(err) = validatpr.validate(&self.email) {
+            Some(vec![err])
+        } else {
+            None
+        }
+    }
+
+    fn validate_password(&self) -> Option<Vec<String>> {
+        let mut validator = StringValidator::new();
+        validator.add_criteria(StringLengthCriteria::min(8));
+        validator.add_criteria(RequiredCharacterGroupCriteria::range('a', 'z'));
+        validator.add_criteria(RequiredCharacterGroupCriteria::range('A', 'Z'));
+        validator.add_criteria(RequiredCharacterGroupCriteria::range('0', '9'));
+        validator.add_criteria(RequiredCharacterGroupCriteria::new("!?.-_#$&".chars().collect()));
+        if let Err(err) =  validator.validate(&self.password) {
+            Some(err.messages)
+        } else {
+            None
+        }
+    }
+}
+
+#[derive(Serialize)]
+struct ApiUser {
+    pub id: i32,
+    pub firstname: String,
+    pub lastname: String,
+    pub username: String,
+    pub email: String,
+}
+
+impl From<User> for ApiUser {
+    fn from(u: User) -> Self {
+        Self {
+            id: u.id,
+            firstname: u.firstname,
+            lastname: u.lastname,
+            username: u.username,
+            email: u.email,
+        }
     }
 }
 
@@ -45,15 +123,16 @@ impl NewApiUser {
 #[serde(crate = "rocket::serde")]
 struct NewUserError {
     message: String,
-    invalid_fields: HashMap<String, String>,
+    invalid_fields: HashMap<String, Vec<String>>,
     status: Status,
 }
 
 impl<'r, 'a: 'r> Responder<'r, 'a> for NewUserError {
     fn respond_to(self, _request: &'r Request<'_>) -> response::Result<'a> {
+        let fields = serde_json::to_string(&self.invalid_fields).unwrap();
         Ok(Response::build()
             .status(self.status)
-            .sized_body(self.message.len(), Cursor::new(self.message))
+            .sized_body(fields.len(), Cursor::new(fields))
             .finalize())
     }
 }
@@ -74,11 +153,11 @@ async fn login_jwt(db: FarmDB, credentials: Json<LoginCredentials>) -> crate::ap
 }
 
 #[post("/create", data = "<user>")]
-async fn create_user(db: FarmDB, user: Json<NewApiUser>) -> Result<Json<User>, NewUserError> {
+async fn create_user(db: FarmDB, user: Json<NewApiUser>) -> Result<Json<ApiUser>, NewUserError> {
     user.validate()?;
     let password = user.password.clone();
     let user = crate::data::user::create_user(db, user.0.into(), password).await?;
-    Ok(Json(user))
+    Ok(Json(user.into()))
 }
 
 #[cfg(test)]
