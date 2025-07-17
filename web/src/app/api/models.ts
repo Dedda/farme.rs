@@ -19,3 +19,22 @@ export class FullFarm {
         public shopTypes: ShopType[],
         public openingHours: OpeningHours[]) {}
 }
+
+export class NewUser {
+    constructor(
+        public firstname: string,
+       public lastname: string,
+       public username: string,
+       public email: string,
+       public password: string,
+    ) {}
+}
+
+export class User {
+    constructor(
+        public firstName: string,
+        public lastName: string,
+        public username: string,
+        public email: string,
+    ) {}
+}

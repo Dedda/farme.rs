@@ -2,7 +2,9 @@ pub mod data;
 pub mod schema;
 mod api;
 mod ident;
+mod validation;
 
+use rocket::http::Method;
 use rocket::{launch, Build, Rocket};
 use rocket_cors::{AllowedOrigins, Cors, CorsOptions};
 
@@ -15,11 +17,14 @@ fn rocket() -> Rocket<Build> {
 }
 
 fn make_cors() -> Cors {
-    let allowed_origins = AllowedOrigins::some_exact(&[
-        "http://localhost:4200",
-    ]);
-    CorsOptions {
-        allowed_origins,
-        ..Default::default()
-    }.to_cors().unwrap()
+    CorsOptions::default()
+        .allowed_origins(AllowedOrigins::all())
+        .allowed_methods(
+            vec![Method::Get, Method::Post]
+                .into_iter()
+                .map(From::from)
+                .collect()
+        ).allow_credentials(true)
+        .to_cors().unwrap()
+
 }

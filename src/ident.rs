@@ -42,7 +42,7 @@ pub async fn login_jwt(db: FarmDB, credentials: Json<LoginCredentials>) -> crate
     } else {
         return Ok(None)
     };
-    if !check_login(db, username.clone(), credentials.0.password).await? {
+    if !check_login(&db, username.clone(), credentials.0.password).await? {
         return Ok(None)
     };
 
