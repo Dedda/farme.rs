@@ -15,7 +15,7 @@ pub fn routes() -> Vec<rocket::Route> {
     routes![login_jwt, create_user]
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(crate = "rocket::serde")]
 struct NewApiUser {
     pub firstname: String,
@@ -37,6 +37,13 @@ impl From<NewApiUser> for NewUser {
 }
 
 impl NewApiUser {
+    pub fn sanitize(&mut self) {
+        self.firstname = self.firstname.trim().to_string();
+        self.lastname = self.lastname.trim().to_string();
+        self.username = self.username.trim().to_lowercase();
+        self.email = self.email.trim().to_lowercase();
+    }
+
     pub fn validate(&self) -> Result<(), NewUserError> {
         let mut errors = HashMap::new();
         if let Some(err) = self.validate_password() {
@@ -98,7 +105,7 @@ impl NewApiUser {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct ApiUser {
     pub id: i32,
     pub firstname: String,
@@ -154,20 +161,42 @@ async fn login_jwt(db: FarmDB, credentials: Json<LoginCredentials>) -> crate::ap
 
 #[post("/create", data = "<user>")]
 async fn create_user(db: FarmDB, user: Json<NewApiUser>) -> Result<Json<ApiUser>, NewUserError> {
+    let mut user = user.into_inner().clone();
+    user.sanitize();
     user.validate()?;
     let password = user.password.clone();
-    let user = crate::data::user::create_user(db, user.0.into(), password).await?;
+    let user = crate::data::user::create_user(db, user.into(), password).await?;
     Ok(Json(user.into()))
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::api::v1::users::ApiUser;
+    use crate::data::user::check_login;
     use crate::data::FarmDB;
-    use crate::{api::v1::users::NewApiUser, data::user::User};
+    use crate::api::v1::users::NewApiUser;
     use diesel::{ExpressionMethods, RunQueryDsl};
     use rocket::http::{ContentType, Status};
     use rocket::local::asynchronous::Client;
-    use crate::data::user::check_login;
+
+    #[test]
+    fn sanitize_new_api_user() {
+        let mut user = NewApiUser {
+            firstname: " Test ".to_string(),
+            lastname: " User ".to_string(),
+            username: " Testuser ".to_string(),
+            email: " Test@test.com ".to_string(),
+            password: "".to_string(),
+        };
+        user.sanitize();
+        assert_eq!(user, NewApiUser {
+            firstname: "Test".to_string(),
+            lastname: "User".to_string(),
+            username: "testuser".to_string(),
+            email: "test@test.com".to_string(),
+            password: "".to_string(),
+        });
+    }
 
     #[tokio::test]
     async fn create_user() {
@@ -191,7 +220,7 @@ mod tests {
             .dispatch().await;
         assert_eq!(response.status(), Status::Ok);
         assert_eq!(response.content_type(), Some(ContentType::JSON));
-        let user: User = response.into_json().await.expect("failed to deserialize json");
+        let user: ApiUser = response.into_json().await.expect("failed to deserialize json");
         assert_eq!(user.firstname, "Firstuser");
         assert_eq!(user.lastname, "Lastuser");
         assert_eq!(user.username, "testusername");
