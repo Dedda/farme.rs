@@ -6,13 +6,13 @@ use rocket::http::Status;
 use rocket::response::Responder;
 use rocket::serde::json::Json;
 use rocket::serde::Serialize;
-use rocket::{post, response, routes, Request, Response};
+use rocket::{get, post, response, routes, Request, Response};
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::io::Cursor;
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![login_jwt, create_user]
+    routes![login_jwt, create_user, current_user]
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -167,6 +167,11 @@ async fn create_user(db: FarmDB, user: Json<NewApiUser>) -> Result<Json<ApiUser>
     let password = user.password.clone();
     let user = crate::data::user::create_user(db, user.into(), password).await?;
     Ok(Json(user.into()))
+}
+
+#[get("/current-user", format = "json")]
+async fn current_user(user: User) -> Option<Json<ApiUser>> {
+    Some(Json(ApiUser::from(user)))
 }
 
 #[cfg(test)]

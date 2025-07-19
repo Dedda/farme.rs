@@ -3,11 +3,12 @@ use crate::data::FarmDB;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use lazy_static::lazy_static;
+use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::Status;
 use rocket::outcome::{try_outcome, IntoOutcome};
 use rocket::request::{FromRequest, Outcome};
 use rocket::serde::json::Json;
-use rocket::{async_trait, post, Request};
+use rocket::{async_trait, post, Request, Response};
 use serde::{Deserialize, Serialize};
 
 #[cfg(not(test))]
@@ -39,7 +40,7 @@ pub struct Claims {
 
 fn create_jwt(username: String) -> Result<String, jsonwebtoken::errors::Error> {
     let username = username.trim().to_lowercase();
-    let expiration = Utc::now().checked_add_signed(Duration::seconds(60)).expect("invalid timestamp").timestamp();
+    let expiration = Utc::now().checked_add_signed(Duration::minutes(15)).expect("invalid timestamp").timestamp();
 
     let claims = Claims {
         subject_id: username,
@@ -78,16 +79,43 @@ impl<'r> FromRequest<'r> for User {
         let username = request.headers()
             .get_one("Authorization")
             .and_then(|header|  decode::<Claims>(header, &DecodingKey::from_secret(JWT_SECRET.as_bytes()), &Validation::new(Algorithm::HS512)).ok())
-            // TODO: Check expiration
             .map(|token_data| token_data.claims)
             .filter(|claims| claims.exp >= Utc::now().timestamp() as usize)
             .map(|claims| claims.subject_id);
+        let auth_header = request.headers()
+            .get_one("Authorization");
+        dbg!(&auth_header);
+        dbg!(&username);
         if let Some(username) = username {
             crate::data::user::by_username(&db, username).await.ok()
                 .flatten()
                 .or_forward(Status::Unauthorized)
         } else {
             Outcome::Forward(Status::Unauthorized)
+        }
+    }
+}
+
+pub struct JwtRefreshFairing;
+
+#[async_trait]
+impl Fairing for JwtRefreshFairing {
+
+    fn info(&self) -> Info {
+        Info {
+            name: "JWT Refresh Fairing",
+            kind: Kind::Response,
+        }
+    }
+
+    async fn on_response<'r>(&self, req: &'r Request<'_>, res: &mut Response<'r>) {
+        match User::from_request(req).await {
+            Outcome::Success(user) => {
+                if let Ok(token) = create_jwt(user.username) {
+                    res.set_raw_header("Authorization", token);
+                }
+            },
+            _ => {}
         }
     }
 }

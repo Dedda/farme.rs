@@ -1,8 +1,7 @@
-import { Component } from '@angular/core';
+import {Component} from '@angular/core';
 import {FormsModule, ReactiveFormsModule} from "@angular/forms";
 import {AuthService, LoginCredentials} from "../../auth.service";
 import {Router} from "@angular/router";
-import {NewUser} from "../../api/models";
 
 @Component({
   selector: 'app-login-page',

@@ -1,9 +1,8 @@
 import {Injectable} from "@angular/core";
 import {HttpClient, HttpHeaders} from "@angular/common/http";
-import {Farm, FullFarm, NewUser} from "./models";
-import { map } from 'rxjs/operators';
+import {Farm, FullFarm, User} from "./models";
+import {map} from 'rxjs/operators';
 import {Observable} from 'rxjs';
-import {AuthService} from "../auth.service";
 
 @Injectable()
 export class ApiService {
@@ -32,4 +31,8 @@ export class ApiService {
         ));
     }
 
+    public getCurrentUser(): Observable<User> {
+        const h = new HttpHeaders({ 'Content-Type': 'application/json' });
+        return this.httpClient.get<User>(this.baseUrl + '/users/current-user', {headers: h});
+    }
 }
