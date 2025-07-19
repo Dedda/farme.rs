@@ -73,14 +73,18 @@ pub async fn create_user(db: FarmDB, user: NewUser, password: String) -> QueryRe
 }
 
 pub async fn check_login(db: &FarmDB, username: String, password: String) -> QueryResult<bool> {
-    let hash: String = db.run(move |conn| {
+    if let Some(hash) = db.run(move |conn| {
         users::table
             .select(users::password)
             .filter(users::username.eq(username))
             .first::<String>(conn)
-    }).await?;
-    let hash = argon2::password_hash::PasswordHash::new(hash.as_str()).unwrap();
-    Ok(Argon2::default().verify_password(password.as_bytes(), &hash).is_ok())
+            .optional()
+    }).await? {
+        let hash = argon2::password_hash::PasswordHash::new(hash.as_str()).unwrap();
+        Ok(Argon2::default().verify_password(password.as_bytes(), &hash).is_ok())
+    } else {
+        Ok(false)
+    }
 }
 
 pub async fn username_by_identity(db: &FarmDB, identity: String) -> QueryResult<Option<String>> {
@@ -101,4 +105,14 @@ pub async fn username_by_identity(db: &FarmDB, identity: String) -> QueryResult<
         identity
     };
     Ok(Some(username))
+}
+
+pub async fn by_username(db: &FarmDB, username: String) -> QueryResult<Option<User>> {
+    db.run(move |conn| {
+    users::table
+        .select(User::as_select())
+        .filter(users::username.eq(username))
+        .first(conn)
+        .optional()
+    }).await
 }

@@ -1,0 +1,17 @@
+.header-line {
+    /*width: 100%;*/
+    /*align-content: end;*/
+    /*align-items: end;*/
+    /*horiz-align: right;*/
+    background-color: #04AA6D;
+    overflow: hidden;
+}
+
+.login-area {
+    float: right;
+    padding: 1em;
+}
+
+.login-area a {
+    padding: 1em;
+}
