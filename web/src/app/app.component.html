@@ -3,4 +3,17 @@
 
 </style>
 
+<div class="header-line">
+    <div class="login-area">
+        <div *ngIf="isLoggedIn();then userarea else login"></div>
+        <ng-template #login>
+            <a routerLink="login">Login</a>
+            <a routerLink="register">Register</a>
+        </ng-template>
+        <ng-template #userarea>
+            <a routerLink="user">Profile</a>
+            <a routerLink="" (click)="logout()">Logout</a>
+        </ng-template>
+    </div>
+</div>
 <router-outlet />

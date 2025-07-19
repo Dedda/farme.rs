@@ -4,11 +4,13 @@ import { FarmDetailsComponent } from './component/farm-details/farm-details.comp
 import { HomePageComponent } from './component/home-page/home-page.component';
 import {LoginPageComponent} from './component/login-page/login-page.component';
 import {RegisterPageComponent} from "./component/register-page/register-page.component";
+import {UserPageComponent} from "./component/user-page/user-page.component";
 
 export const routes: Routes = [
     { path: '', component: HomePageComponent },
     { path: 'register', component: RegisterPageComponent },
     { path: 'login', component: LoginPageComponent },
+    { path: 'user', component: UserPageComponent},
     { path: 'farms/:id', component: FarmDetailsComponent },
     { path: 'farms', component: FarmListComponent },
 ];

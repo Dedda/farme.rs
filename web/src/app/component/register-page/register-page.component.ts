@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component} from '@angular/core';
 import {AuthService} from "../../auth.service";
 import {Router} from "@angular/router";
 import {FormsModule} from "@angular/forms";
@@ -12,7 +12,7 @@ import {NewUser} from "../../api/models";
   templateUrl: './register-page.component.html',
   styleUrl: './register-page.component.css'
 })
-export class RegisterPageComponent implements OnInit {
+export class RegisterPageComponent {
 
     firstname: string = '';
     lastname: string = '';
@@ -24,10 +24,6 @@ export class RegisterPageComponent implements OnInit {
     submitting: boolean = false;
 
     constructor(private authService: AuthService, private router: Router) {}
-
-    ngOnInit(): void {
-
-    }
 
     validate(): boolean {
         if (this.firstname.trim().length < 2) {
@@ -44,6 +40,7 @@ export class RegisterPageComponent implements OnInit {
     }
 
     registerAction() {
+        this.submitting = true;
         if (!this.validate()) {
             return;
         }
@@ -51,6 +48,7 @@ export class RegisterPageComponent implements OnInit {
         this.authService.register(newUser).subscribe(res => {
             console.log('user registered: ', res);
             this.router.navigate(['/']).then(r => {});
+            this.submitting = false;
         });
     }
 }

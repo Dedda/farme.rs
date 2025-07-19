@@ -4,16 +4,19 @@ mod api;
 mod ident;
 mod validation;
 
+use dotenv::dotenv;
 use rocket::http::Method;
-use rocket::{launch, Build, Rocket};
+use rocket::{launch, routes, Build, Rocket};
 use rocket_cors::{AllowedOrigins, Cors, CorsOptions};
 
 #[launch]
 fn rocket() -> Rocket<Build> {
+    dotenv().ok();
     let r = Rocket::build()
         .attach(data::stage())
         .attach(make_cors());
     api::v1::mount(r)
+        .mount("/", routes![ident::login_jwt])
 }
 
 fn make_cors() -> Cors {

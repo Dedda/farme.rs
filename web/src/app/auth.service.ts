@@ -9,13 +9,40 @@ import {map} from "rxjs/operators";
 })
 export class AuthService {
 
-    private baseUrl = 'http://localhost:8000/api/v1';
+    private baseUrl = 'http://localhost:8000';
+    private apiBaseUrl = this.baseUrl + '/api/v1';
 
     constructor(
       private http: HttpClient,
     ) { }
 
     public register(user: NewUser): Observable<User> {
-        return this.http.post<User>(this.baseUrl + '/users/create', user);
+        return this.http.post<User>(this.apiBaseUrl + '/users/create', user);
     }
+
+    public login(credentials: LoginCredentials): Observable<boolean> {
+        return this.http.post(this.baseUrl + '/login-jwt', credentials, {responseType: "text"}).pipe(map(res => {
+            this.setSession(res);
+            return true;
+        }));
+    }
+
+    public logout() {
+        localStorage.removeItem('token');
+    }
+
+    public isLoggedIn(): boolean {
+        return localStorage.getItem('token') != null;
+    }
+
+    private setSession(token: string) {
+        localStorage.setItem('token', token);
+    }
+ }
+
+export class LoginCredentials {
+    constructor(
+        public identity: string,
+        public password: string,
+    ) { }
 }
