@@ -1,6 +1,6 @@
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
 
-import { FarmListComponent } from './farm-list.component';
+import {FarmListComponent} from './farm-list.component';
 
 describe('FarmListComponent', () => {
   let component: FarmListComponent;

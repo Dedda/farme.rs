@@ -1,4 +1,4 @@
-import {HttpInterceptorFn, HttpRequest, HttpResponse} from "@angular/common/http";
+import {HttpInterceptorFn, HttpResponse} from "@angular/common/http";
 import {jwtDecode, JwtPayload} from "jwt-decode";
 import {tap} from "rxjs";
 

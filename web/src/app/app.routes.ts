@@ -1,7 +1,7 @@
-import { Routes } from '@angular/router';
-import { FarmListComponent } from './component/farm-list/farm-list.component';
-import { FarmDetailsComponent } from './component/farm-details/farm-details.component';
-import { HomePageComponent } from './component/home-page/home-page.component';
+import {Routes} from '@angular/router';
+import {FarmListComponent} from './component/farm-list/farm-list.component';
+import {FarmDetailsComponent} from './component/farm-details/farm-details.component';
+import {HomePageComponent} from './component/home-page/home-page.component';
 import {LoginPageComponent} from './component/login-page/login-page.component';
 import {RegisterPageComponent} from "./component/register-page/register-page.component";
 import {UserPageComponent} from "./component/user-page/user-page.component";
