@@ -39,7 +39,7 @@ pub struct Claims {
 
 fn create_jwt(username: String) -> Result<String, jsonwebtoken::errors::Error> {
     let username = username.trim().to_lowercase();
-    let expiration = Utc::now().checked_add_signed(Duration::seconds(60)).expect("invalid timestamp").timestamp();
+    let expiration = Utc::now().checked_add_signed(Duration::minutes(1)).expect("invalid timestamp").timestamp();
 
     let claims = Claims {
         subject_id: username,
@@ -78,10 +78,13 @@ impl<'r> FromRequest<'r> for User {
         let username = request.headers()
             .get_one("Authorization")
             .and_then(|header|  decode::<Claims>(header, &DecodingKey::from_secret(JWT_SECRET.as_bytes()), &Validation::new(Algorithm::HS512)).ok())
-            // TODO: Check expiration
             .map(|token_data| token_data.claims)
             .filter(|claims| claims.exp >= Utc::now().timestamp() as usize)
             .map(|claims| claims.subject_id);
+        let auth_header = request.headers()
+            .get_one("Authorization");
+        dbg!(&auth_header);
+        dbg!(&username);
         if let Some(username) = username {
             crate::data::user::by_username(&db, username).await.ok()
                 .flatten()

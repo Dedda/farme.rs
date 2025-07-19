@@ -3,6 +3,7 @@ import {HttpClient} from "@angular/common/http";
 import {NewUser, User} from "./api/models";
 import {Observable} from "rxjs";
 import {map} from "rxjs/operators";
+import {getLoginToken} from "./auth.interceptor";
 
 @Injectable({
   providedIn: 'root'
@@ -32,7 +33,7 @@ export class AuthService {
     }
 
     public isLoggedIn(): boolean {
-        return localStorage.getItem('token') != null;
+        return getLoginToken() != null;
     }
 
     private setSession(token: string) {
