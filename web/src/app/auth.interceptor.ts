@@ -1,16 +1,32 @@
-import {HttpInterceptorFn} from "@angular/common/http";
+import {HttpInterceptorFn, HttpRequest, HttpResponse} from "@angular/common/http";
 import {jwtDecode, JwtPayload} from "jwt-decode";
+import {tap} from "rxjs";
 
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
    const token = getLoginToken();
 
+   var newRequest = req;
+
     if (token) {
-        return next(req.clone({
+        newRequest = req.clone({
             headers: req.headers.set('Authorization', token)
-        }));
+        });
     }
-    return next(req);
+    return next(newRequest).pipe(tap({
+        next: event => {
+            if (event instanceof HttpResponse) {
+                console.log('response');
+                let headers = event.headers;
+                // console.log(headers);
+                let auth = headers.get('Authorization');
+                if (auth) {
+                    console.log('Updating login token');
+                    localStorage.setItem('token', auth);
+                }
+            }
+        }
+    }));
 }
 
 export function getLoginToken(): string | null {

@@ -5,16 +5,18 @@ mod ident;
 mod validation;
 
 use dotenv::dotenv;
+use ident::JwtRefreshFairing;
 use rocket::http::Method;
 use rocket::{launch, routes, Build, Rocket};
-use rocket_cors::{AllowedOrigins, Cors, CorsOptions};
+use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions};
 
 #[launch]
 fn rocket() -> Rocket<Build> {
     dotenv().ok();
     let r = Rocket::build()
         .attach(data::stage())
-        .attach(make_cors());
+        .attach(make_cors())
+        .attach(JwtRefreshFairing);
     api::v1::mount(r)
         .mount("/", routes![ident::login_jwt])
 }
@@ -22,6 +24,8 @@ fn rocket() -> Rocket<Build> {
 fn make_cors() -> Cors {
     CorsOptions::default()
         .allowed_origins(AllowedOrigins::all())
+        .allowed_headers(AllowedHeaders::all())
+        .expose_headers(["Authorization"].iter().map(ToString::to_string).collect())
         .allowed_methods(
             vec![Method::Get, Method::Post]
                 .into_iter()
