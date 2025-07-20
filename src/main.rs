@@ -1,14 +1,14 @@
 pub mod data;
 pub mod schema;
 mod api;
-mod ident;
 mod validation;
 
 use dotenv::dotenv;
-use ident::JwtRefreshFairing;
+use api::v1::ident::JwtRefreshFairing;
 use rocket::http::Method;
 use rocket::{launch, routes, Build, Rocket};
 use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions};
+use api::v1::ident;
 
 #[launch]
 fn rocket() -> Rocket<Build> {

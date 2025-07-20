@@ -1,5 +1,5 @@
-use rocket::response::Debug;
+use crate::api::v1::error::ApiError;
 
 pub mod v1;
 
-pub type Result<T, E = Debug<diesel::result::Error>> = std::result::Result<T, E>;
+pub type Result<T> = std::result::Result<T, ApiError>;

@@ -1,15 +1,15 @@
+use crate::api::Result as ApiResult;
+use crate::api::v1::error::{ApiError, ValidationError as ValidationApiError};
+use crate::api::v1::ident::LoginCredentials;
 use crate::data::user::{self, username_by_identity, DefaultUserChange, NewUser, User};
 use crate::data::FarmDB;
-use crate::ident::LoginCredentials;
 use crate::validation::{RegexValidator, RequiredCharacterGroupCriteria, StringCriteria, StringLengthCriteria, StringValidator, Validator};
 use rocket::http::Status;
-use rocket::response::Responder;
 use rocket::serde::json::Json;
 use rocket::serde::Serialize;
-use rocket::{get, post, response, routes, Request, Response};
+use rocket::{get, post, routes};
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::io::Cursor;
 
 pub fn routes() -> Vec<rocket::Route> {
     routes![login_jwt, create_user, current_user, no_current_user, change_user, change_password]
@@ -44,7 +44,7 @@ impl NewApiUser {
         self.email = self.email.trim().to_lowercase();
     }
 
-    pub fn validate(&self) -> Result<(), NewUserError> {
+    pub fn validate(&self) -> Result<(), ValidationApiError> {
         let mut errors = HashMap::new();
         if let Some(err) = self.validate_password() {
             errors.insert("password".to_string(), err);
@@ -58,11 +58,7 @@ impl NewApiUser {
         if errors.is_empty() {
             Ok(())
         } else {
-            Err(NewUserError {
-                message: "validation error".to_string(),
-                invalid_fields: errors,
-                status: Status::BadRequest,
-            })
+            Err(ValidationApiError::for_fields(errors))
         }
     }
 
@@ -130,80 +126,42 @@ impl From<User> for ApiUser {
     }
 }
 
-#[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
-struct NewUserError {
-    message: String,
-    invalid_fields: HashMap<String, Vec<String>>,
-    status: Status,
-}
-
-impl<'r, 'a: 'r> Responder<'r, 'a> for NewUserError {
-    fn respond_to(self, _request: &'r Request<'_>) -> response::Result<'a> {
-        let fields = serde_json::to_string(&self.invalid_fields).unwrap();
-        Ok(Response::build()
-            .status(self.status)
-            .sized_body(fields.len(), Cursor::new(fields))
-            .finalize())
-    }
-}
-
-impl From<diesel::result::Error> for NewUserError {
-    fn from(_value: diesel::result::Error) -> Self {
-        Self {
-            message: "Databse error".to_string(),
-            invalid_fields: HashMap::new(),
-            status: Status::InternalServerError,
-        }
-    }
-}
-
 #[post("/login-jwt", data = "<credentials>")]
-async fn login_jwt(db: FarmDB, credentials: Json<LoginCredentials>) -> crate::api::Result<Option<String>> {
-    crate::ident::login_jwt(db, credentials).await
+async fn login_jwt(db: FarmDB, credentials: Json<LoginCredentials>) -> ApiResult<Option<String>> {
+    crate::api::v1::ident::login_jwt(db, credentials).await
 }
 
 #[post("/create", data = "<user>")]
-async fn create_user(db: FarmDB, user: Json<NewApiUser>) -> Result<Json<ApiUser>, NewUserError> {
+async fn create_user(db: FarmDB, user: Json<NewApiUser>) -> ApiResult<Json<ApiUser>> {
     let mut user = user.into_inner();
     user.sanitize();
     user.validate()?;
     let password = user.password.clone();
-    let user = crate::data::user::create_user(db, user.into(), password).await?;
+    let user = user::create_user(db, user.into(), password).await?;
     Ok(Json(user.into()))
 }
 
 #[post("/change", data = "<changed>")]
-async fn change_user(db: FarmDB, user: User, changed: Json<NewApiUser>) -> Result<(), NewUserError> {
+async fn change_user(db: FarmDB, user: User, changed: Json<NewApiUser>) -> ApiResult<()> {
     let mut changed = changed.into_inner();
     if !user::check_login(&db, changed.username.clone(), changed.password.clone()).await? {
-        return Err(NewUserError {
-            message: "Wrong password".to_string(),
-            invalid_fields: Default::default(),
-            status: Status::Unauthorized,
-        })
+        return Err(ApiError::WrongCredentials);
     }
     if user.username.ne(&changed.username) {
-        return Err(NewUserError {
-            message: "Cannot change user".to_string(),
-            invalid_fields: HashMap::from([
+        return Err(ValidationApiError::new("Cannot change user".to_string(), HashMap::from([
                 ("username".to_string(), vec!["May not change username".to_string()]),
             ]),
-            status: Status::BadRequest,
-        });
+        ).into());
     }
     changed.sanitize();
     changed.validate()?;
     if user.email.ne(&changed.email) {
         if let Some(found) = username_by_identity(&db, changed.email.clone()).await? {
             if !user.username.eq(&found) {
-                return Err(NewUserError {
-                    message: "Cannot change user".to_string(),
-                    invalid_fields: HashMap::from([
+                return Err(ValidationApiError::for_fields(HashMap::from([
                         ("email".to_string(), vec!["Email already in use".to_string()]),
-                    ]),
-                    status: Status::BadRequest,
-                });
+                    ])).into()
+                );
             }
         }
     }
@@ -223,13 +181,9 @@ struct PasswordChangeRequest {
 }
 
 #[post("/change-password", data = "<change_request>")]
-async fn change_password(db: FarmDB, user: User, change_request: Json<PasswordChangeRequest>) -> Result<(), NewUserError> {
+async fn change_password(db: FarmDB, user: User, change_request: Json<PasswordChangeRequest>) -> ApiResult<()> {
     if let Some(errors) = validate_password(&change_request.new_password) {
-        return Err(NewUserError {
-            message: "Cannot change password".to_string(),
-            invalid_fields: HashMap::from([("password".to_string(), errors)]),
-            status: Status::BadRequest,
-        })
+        return Err(ValidationApiError::for_fields(HashMap::from([("password".to_string(), errors)])).into());
     }
     user::check_login(&db, user.username.clone(), change_request.old_password.clone()).await?;
     user::password_change(&db, user.username, change_request.new_password.clone()).await?;
@@ -248,13 +202,13 @@ async fn no_current_user() -> Status {
 
 #[cfg(test)]
 mod tests {
+    use crate::api::v1::ident::LoginCredentials;
     use crate::api::v1::users::ApiUser;
     use crate::api::v1::users::NewApiUser;
     use crate::api::v1::users::PasswordChangeRequest;
     use crate::data::user;
     use crate::data::user::check_login;
     use crate::data::FarmDB;
-    use crate::ident::LoginCredentials;
     use diesel::{ExpressionMethods, RunQueryDsl};
     use rocket::http::Header;
     use rocket::http::{ContentType, Status};

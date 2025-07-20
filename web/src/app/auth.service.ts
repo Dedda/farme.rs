@@ -22,7 +22,7 @@ export class AuthService {
     }
 
     public login(credentials: LoginCredentials): Observable<boolean> {
-        return this.http.post(this.baseUrl + '/login-jwt', credentials, {responseType: "text"}).pipe(map(res => {
+        return this.http.post(this.apiBaseUrl + '/ident/login-jwt', credentials, {responseType: "text"}).pipe(map(res => {
             this.setSession(res);
             return true;
         }));

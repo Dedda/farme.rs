@@ -1,3 +1,4 @@
+use crate::api::Result as ApiResult;
 use crate::data::user::{check_login, username_by_identity, User};
 use crate::data::FarmDB;
 use chrono::{Duration, Utc};
@@ -23,6 +24,10 @@ lazy_static! {
 #[cfg(test)]
 lazy_static! {
     static ref JWT_SECRET: String = String::from("testsecret");
+}
+
+pub fn routes() -> Vec<rocket::Route> {
+    rocket::routes![login_jwt]
 }
 
 #[derive(Serialize, Deserialize)]
@@ -52,7 +57,7 @@ fn create_jwt(username: String) -> Result<String, jsonwebtoken::errors::Error> {
 }
 
 #[post("/login-jwt", data = "<credentials>")]
-pub async fn login_jwt(db: FarmDB, credentials: Json<LoginCredentials>) -> crate::api::Result<Option<String>> {
+pub async fn login_jwt(db: FarmDB, credentials: Json<LoginCredentials>) -> ApiResult<Option<String>> {
     let identity = credentials.identity.trim().to_lowercase();
     let username = if let Some(name) = username_by_identity(&db, identity).await.ok().flatten() {
         name
