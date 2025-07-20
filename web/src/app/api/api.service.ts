@@ -40,4 +40,13 @@ export class ApiService {
         const h = new HttpHeaders({ 'Content-Type': 'application/json' });
         return this.httpClient.post(this.baseUrl + '/users/change', user, {headers: h}).pipe(map(_res => true));
     }
+
+    public changePassword(change: PasswordChangeRequest): Observable<boolean> {
+        const h = new HttpHeaders({ 'Content-Type': 'application/json' });
+        return this.httpClient.post(this.baseUrl + '/users/change-password', change, {headers: h}).pipe(map(_res => true));
+    }
+}
+
+export class PasswordChangeRequest {
+    constructor(public old_password: string, public new_password: string) {}
 }

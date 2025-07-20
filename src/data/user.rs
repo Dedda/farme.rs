@@ -92,6 +92,18 @@ pub async fn default_user_change(db: &FarmDB, user: DefaultUserChange) -> QueryR
     Ok(())
 }
 
+pub async fn password_change(db: &FarmDB, username: String, password: String) -> QueryResult<()> {
+    let salt = SaltString::generate(&mut OsRng);
+    let password = Argon2::default().hash_password(password.as_bytes(), &salt).unwrap().to_string();
+    db.run(move |conn| {
+        diesel::update(users::table)
+            .filter(users::username.eq(username))
+            .set(users::password.eq(&password))
+            .execute(conn)
+    }).await?;
+    Ok(())
+}
+
 pub async fn check_login(db: &FarmDB, username: String, password: String) -> QueryResult<bool> {
     if let Some(hash) = db.run(move |conn| {
         users::table
