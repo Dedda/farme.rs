@@ -1,4 +1,4 @@
-use crate::data::user::{NewUser, User};
+use crate::data::user::{self, username_by_identity, DefaultUserChange, NewUser, User};
 use crate::data::FarmDB;
 use crate::ident::LoginCredentials;
 use crate::validation::{RegexValidator, RequiredCharacterGroupCriteria, StringCriteria, StringLengthCriteria, StringValidator, Validator};
@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::io::Cursor;
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![login_jwt, create_user, current_user]
+    routes![login_jwt, create_user, current_user, change_user]
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -58,6 +58,7 @@ impl NewApiUser {
         if errors.is_empty() {
             Ok(())
         } else {
+            dbg!(&errors);
             Err(NewUserError {
                 message: "validation error".to_string(),
                 invalid_fields: errors,
@@ -161,12 +162,55 @@ async fn login_jwt(db: FarmDB, credentials: Json<LoginCredentials>) -> crate::ap
 
 #[post("/create", data = "<user>")]
 async fn create_user(db: FarmDB, user: Json<NewApiUser>) -> Result<Json<ApiUser>, NewUserError> {
-    let mut user = user.into_inner().clone();
+    let mut user = user.into_inner();
     user.sanitize();
     user.validate()?;
     let password = user.password.clone();
     let user = crate::data::user::create_user(db, user.into(), password).await?;
     Ok(Json(user.into()))
+}
+
+#[post("/change", data = "<changed>")]
+async fn change_user(db: FarmDB, user: User, changed: Json<NewApiUser>) -> Result<(), NewUserError> {
+    let mut changed = changed.into_inner();
+    if !user::check_login(&db, changed.username.clone(), changed.password.clone()).await? {
+        return Err(NewUserError {
+            message: "Wrong password".to_string(),
+            invalid_fields: Default::default(),
+            status: Status::Unauthorized,
+        })
+    }
+    if user.username.ne(&changed.username) {
+        return Err(NewUserError {
+            message: "Cannot change user".to_string(),
+            invalid_fields: HashMap::from([
+                ("username".to_string(), vec!["May not change username".to_string()]),
+            ]),
+            status: Status::BadRequest,
+        });
+    }
+    changed.sanitize();
+    changed.validate()?;
+    if user.email.ne(&changed.email) {
+        if let Some(found) = username_by_identity(&db, changed.email.clone()).await? {
+            if !user.username.eq(&found) {
+                return Err(NewUserError {
+                    message: "Cannot change user".to_string(),
+                    invalid_fields: HashMap::from([
+                        ("email".to_string(), vec!["Email already in use".to_string()]),
+                    ]),
+                    status: Status::BadRequest,
+                });
+            }
+        }
+    }
+    user::default_user_change(&db, DefaultUserChange {
+        firstname: changed.firstname,
+        lastname: changed.lastname,
+        username: changed.username,
+        email: changed.email,
+    }).await?;
+    Ok(())
 }
 
 #[get("/current-user", format = "json")]
@@ -177,10 +221,13 @@ async fn current_user(user: User) -> Option<Json<ApiUser>> {
 #[cfg(test)]
 mod tests {
     use crate::api::v1::users::ApiUser;
+    use crate::api::v1::users::NewApiUser;
+    use crate::data::user;
     use crate::data::user::check_login;
     use crate::data::FarmDB;
-    use crate::api::v1::users::NewApiUser;
+    use crate::ident::LoginCredentials;
     use diesel::{ExpressionMethods, RunQueryDsl};
+    use rocket::http::Header;
     use rocket::http::{ContentType, Status};
     use rocket::local::asynchronous::Client;
 
@@ -205,6 +252,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_user() {
+        // launch rocket
         let rocket = crate::rocket()
             .ignite()
             .await
@@ -219,6 +267,7 @@ mod tests {
             email: "test@test.com".to_string(),
             password: "na9e8#aKsd".to_string(),
         };
+        // create user via API
         let req = client.post("/api/v1/users/create");
         let response = req
             .body(serde_json::to_string(&new_api_user).expect("failed to serialize user"))
@@ -232,11 +281,46 @@ mod tests {
         assert_eq!(user.email, "test@test.com");
         let id = user.id;
         let db = FarmDB::get_one(client.rocket()).await.expect("failed to get db");
+        let password = new_api_user.password.clone();
         let password_check = check_login(&db, new_api_user.username, new_api_user.password)
             .await
             .expect("failed to check user login");
         assert!(password_check);
-        // Delete created user
+        // login via API
+        let req = client.post("/login-jwt");
+        let response = req.body(serde_json::to_string(&LoginCredentials {
+                identity: user.username.clone(),
+                password: password.clone(),
+            }).expect("failed to serialize login credentials"))
+            .dispatch().await;
+        assert_eq!(response.status(), Status::Ok);
+        assert_eq!(response.content_type(), Some(ContentType::Text));
+        let token = response.into_string().await.expect("cannot read login response body");
+        assert!(!token.is_empty());
+        // change user via API
+        let changed_user = NewApiUser {
+            firstname: "Firsty".to_string(),
+            lastname: "Lasty".to_string(),
+            username: "testusername".to_string(),
+            email: "test123@test456.com".to_string(),
+            password,
+        };
+        let req = client.post("/api/v1/users/change");
+        let response = req.body(
+                serde_json::to_string(&changed_user).expect("failed to serialize change user"),
+            )
+            .header(Header::new("Authorization", token))
+            .dispatch().await;
+        assert_eq!(response.status(), Status::Ok);
+        // check user changes
+        let changed = user::by_username(&db, "testusername".to_string()).await
+            .expect("failed to get user by username")
+            .expect("failed to find changed user by username");
+        assert_eq!(changed.firstname, "Firsty");
+        assert_eq!(changed.lastname, "Lasty");
+        assert_eq!(changed.username, "testusername");
+        assert_eq!(changed.email, "test123@test456.com");
+        // delete created user
         db.run(move |conn| {
             diesel::delete(crate::schema::users::table)
                 .filter(crate::schema::users::id.eq(id))

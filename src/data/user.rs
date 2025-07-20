@@ -28,6 +28,15 @@ pub struct NewUser {
     pub email: String,
 }
 
+#[derive(AsChangeset)]
+#[diesel(table_name = users)]
+pub struct DefaultUserChange {
+    pub firstname: String,
+    pub lastname: String,
+    pub username: String,
+    pub email: String,
+}
+
 #[derive(Insertable)]
 #[diesel(table_name = users)]
 pub struct InsertableUser {
@@ -70,6 +79,17 @@ pub async fn create_user(db: FarmDB, user: NewUser, password: String) -> QueryRe
             .expect("");
         Ok(user)
     }).await
+}
+
+pub async fn default_user_change(db: &FarmDB, user: DefaultUserChange) -> QueryResult<()> {
+    db.run(move |conn| {
+        let username = user.username.clone();
+        diesel::update(users::table)
+            .filter(users::username.eq(&username))
+            .set(user)
+            .execute(conn)
+    }).await?;
+    Ok(())
 }
 
 pub async fn check_login(db: &FarmDB, username: String, password: String) -> QueryResult<bool> {
