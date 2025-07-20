@@ -1,7 +1,7 @@
 <div class="container">
     <h1>Login</h1>
 
-    <form>
+    <form (ngSubmit)="loginAction()">
         <div>
             <label for="identity">Username or password</label>
             <input
@@ -24,8 +24,7 @@
             <button
                     class="loginbtn"
                     [disabled]="submitting || !validate()"
-                    (click)="loginAction()"
-                    type="button">Login
+                    type="submit">Login
             </button>
         </div>
     </form>

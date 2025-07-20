@@ -81,7 +81,8 @@ impl<'r> FromRequest<'r> for User {
             .and_then(|header|  decode::<Claims>(header, &DecodingKey::from_secret(JWT_SECRET.as_bytes()), &Validation::new(Algorithm::HS512)).ok())
             .map(|token_data| token_data.claims)
             .filter(|claims| claims.exp >= Utc::now().timestamp() as usize)
-            .map(|claims| claims.subject_id);
+            .map(|claims| claims.subject_id)
+            .map(|s| s.to_lowercase());
         let auth_header = request.headers()
             .get_one("Authorization");
         dbg!(&auth_header);
@@ -109,13 +110,10 @@ impl Fairing for JwtRefreshFairing {
     }
 
     async fn on_response<'r>(&self, req: &'r Request<'_>, res: &mut Response<'r>) {
-        match User::from_request(req).await {
-            Outcome::Success(user) => {
-                if let Ok(token) = create_jwt(user.username) {
-                    res.set_raw_header("Authorization", token);
-                }
-            },
-            _ => {}
+        if let Outcome::Success(user) =  User::from_request(req).await {
+            if let Ok(token) = create_jwt(user.username) {
+                res.set_raw_header("Authorization", token);
+            }
         }
     }
 }

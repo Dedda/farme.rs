@@ -1,7 +1,7 @@
 <div>
     <h1>Change user <span>{{ user.username }}</span></h1>
 
-    <form>
+    <form (ngSubmit)="changeAction()">
         <div>
             <label for="firstname">First name</label>
             <input
@@ -42,8 +42,7 @@
             <button
                     class="updatebtn"
                     [disabled]="submitting || !validate()"
-                    (click)="changeAction()"
-                    type="button">Update</button>
+                    type="submit">Update</button>
         </div>
     </form>
 </div>

@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::io::Cursor;
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![login_jwt, create_user, current_user, no_current_user, change_user]
+    routes![login_jwt, create_user, current_user, no_current_user, change_user, change_password]
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -92,17 +92,21 @@ impl NewApiUser {
     }
 
     fn validate_password(&self) -> Option<Vec<String>> {
-        let mut validator = StringValidator::new();
-        validator.add_criteria(StringLengthCriteria::min(8));
-        validator.add_criteria(RequiredCharacterGroupCriteria::range('a', 'z'));
-        validator.add_criteria(RequiredCharacterGroupCriteria::range('A', 'Z'));
-        validator.add_criteria(RequiredCharacterGroupCriteria::range('0', '9'));
-        validator.add_criteria(RequiredCharacterGroupCriteria::new("!?.-_#$&".chars().collect()));
-        if let Err(err) =  validator.validate(&self.password) {
-            Some(err.messages)
-        } else {
-            None
-        }
+        validate_password(&self.password)
+    }
+}
+
+fn validate_password(password: &str) -> Option<Vec<String>> {
+    let mut validator = StringValidator::new();
+    validator.add_criteria(StringLengthCriteria::min(8));
+    validator.add_criteria(RequiredCharacterGroupCriteria::range('a', 'z'));
+    validator.add_criteria(RequiredCharacterGroupCriteria::range('A', 'Z'));
+    validator.add_criteria(RequiredCharacterGroupCriteria::range('0', '9'));
+    validator.add_criteria(RequiredCharacterGroupCriteria::new("!?.-_#$&".chars().collect()));
+    if let Err(err) =  validator.validate(password) {
+        Some(err.messages)
+    } else {
+        None
     }
 }
 
@@ -213,6 +217,26 @@ async fn change_user(db: FarmDB, user: User, changed: Json<NewApiUser>) -> Resul
     Ok(())
 }
 
+#[derive(Serialize, Deserialize)]
+struct PasswordChangeRequest {
+    pub old_password: String,
+    pub new_password: String,
+}
+
+#[post("/change-password", data = "<change_request>")]
+async fn change_password(db: FarmDB, user: User, change_request: Json<PasswordChangeRequest>) -> Result<(), NewUserError> {
+    if let Some(errors) = validate_password(&change_request.new_password) {
+        return Err(NewUserError {
+            message: "Cannot change password".to_string(),
+            invalid_fields: HashMap::from([("password".to_string(), errors)]),
+            status: Status::BadRequest,
+        })
+    }
+    user::check_login(&db, user.username.clone(), change_request.old_password.clone()).await?;
+    user::password_change(&db, user.username, change_request.new_password.clone()).await?;
+    Ok(())
+}
+
 #[get("/current-user", format = "json")]
 async fn current_user(user: User) -> Option<Json<ApiUser>> {
     Some(Json(ApiUser::from(user)))
@@ -227,6 +251,7 @@ async fn no_current_user() -> Status {
 mod tests {
     use crate::api::v1::users::ApiUser;
     use crate::api::v1::users::NewApiUser;
+    use crate::api::v1::users::PasswordChangeRequest;
     use crate::data::user;
     use crate::data::user::check_login;
     use crate::data::FarmDB;
@@ -308,7 +333,7 @@ mod tests {
             lastname: "Lasty".to_string(),
             username: "testusername".to_string(),
             email: "test123@test456.com".to_string(),
-            password,
+            password: password.clone(),
         };
         let req = client.post("/api/v1/users/change");
         let response = req.body(
@@ -316,6 +341,7 @@ mod tests {
             )
             .header(Header::new("Authorization", token))
             .dispatch().await;
+        let token = response.headers().get_one("Authorization").expect("no authorization header").to_string();
         assert_eq!(response.status(), Status::Ok);
         // check user changes
         let changed = user::by_username(&db, "testusername".to_string()).await
@@ -325,6 +351,21 @@ mod tests {
         assert_eq!(changed.lastname, "Lasty");
         assert_eq!(changed.username, "testusername");
         assert_eq!(changed.email, "test123@test456.com");
+        // change password via API
+        let req = client.post("/api/v1/users/change-password");
+        let response = req.body(
+                serde_json::to_string(&PasswordChangeRequest {
+                    old_password: password,
+                    new_password: "na9e8#aKsO".to_string(),
+                }).expect("failed to serialize password change")
+            )
+            .header(Header::new("Authorization", token))
+            .dispatch().await;
+        assert_eq!(response.status(), Status::Ok);
+        let password_check = check_login(&db, "testusername".to_string(), "na9e8#aKsO".to_string())
+            .await
+            .expect("failed to check user login");
+        assert!(password_check);
         // delete created user
         db.run(move |conn| {
             diesel::delete(crate::schema::users::table)
