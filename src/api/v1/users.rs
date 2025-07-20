@@ -58,7 +58,6 @@ impl NewApiUser {
         if errors.is_empty() {
             Ok(())
         } else {
-            dbg!(&errors);
             Err(NewUserError {
                 message: "validation error".to_string(),
                 invalid_fields: errors,
@@ -281,7 +280,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn create_user() {
+    async fn user_api_crud() {
         // launch rocket
         let rocket = crate::rocket()
             .ignite()

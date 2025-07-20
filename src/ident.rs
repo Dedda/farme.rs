@@ -83,10 +83,6 @@ impl<'r> FromRequest<'r> for User {
             .filter(|claims| claims.exp >= Utc::now().timestamp() as usize)
             .map(|claims| claims.subject_id)
             .map(|s| s.to_lowercase());
-        let auth_header = request.headers()
-            .get_one("Authorization");
-        dbg!(&auth_header);
-        dbg!(&username);
         if let Some(username) = username {
             crate::data::user::by_username(&db, username).await.ok()
                 .flatten()
