@@ -12,7 +12,7 @@ use std::collections::HashMap;
 use std::io::Cursor;
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![login_jwt, create_user, current_user, change_user]
+    routes![login_jwt, create_user, current_user, no_current_user, change_user]
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -216,6 +216,11 @@ async fn change_user(db: FarmDB, user: User, changed: Json<NewApiUser>) -> Resul
 #[get("/current-user", format = "json")]
 async fn current_user(user: User) -> Option<Json<ApiUser>> {
     Some(Json(ApiUser::from(user)))
+}
+
+#[get("/current-user", format = "json", rank = 2)]
+async fn no_current_user() -> Status {
+    Status::Unauthorized
 }
 
 #[cfg(test)]

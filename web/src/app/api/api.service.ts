@@ -1,6 +1,6 @@
 import {Injectable} from "@angular/core";
 import {HttpClient, HttpHeaders} from "@angular/common/http";
-import {Farm, FullFarm, User} from "./models";
+import {Farm, FullFarm, NewUser, User} from "./models";
 import {map} from 'rxjs/operators';
 import {Observable} from 'rxjs';
 
@@ -34,5 +34,10 @@ export class ApiService {
     public getCurrentUser(): Observable<User> {
         const h = new HttpHeaders({ 'Content-Type': 'application/json' });
         return this.httpClient.get<User>(this.baseUrl + '/users/current-user', {headers: h});
+    }
+
+    public updateCurrentUser(user: NewUser): Observable<boolean> {
+        const h = new HttpHeaders({ 'Content-Type': 'application/json' });
+        return this.httpClient.post(this.baseUrl + '/users/change', user, {headers: h}).pipe(map(_res => true));
     }
 }
