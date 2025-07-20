@@ -1,12 +1,14 @@
 import {Component, OnInit} from '@angular/core';
 import {AuthService} from "../../auth.service";
-import {Router} from "@angular/router";
+import {Router, RouterLink} from "@angular/router";
 import {User} from "../../api/models";
 import {ApiService} from "../../api/api.service";
 
 @Component({
     selector: 'app-user-page',
-    imports: [],
+    imports: [
+        RouterLink
+    ],
     templateUrl: './user-page.component.html',
     styleUrl: './user-page.component.css'
 })

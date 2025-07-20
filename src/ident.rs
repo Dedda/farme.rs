@@ -25,7 +25,7 @@ lazy_static! {
     static ref JWT_SECRET: String = String::from("testsecret");
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
 pub struct LoginCredentials {
     pub identity: String,

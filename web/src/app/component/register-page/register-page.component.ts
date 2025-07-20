@@ -42,6 +42,7 @@ export class RegisterPageComponent {
     registerAction() {
         this.submitting = true;
         if (!this.validate()) {
+            this.submitting = false;
             return;
         }
         var newUser = new NewUser(this.firstname, this.lastname, this.username, this.email, this.password);
