@@ -145,14 +145,7 @@ async fn change_user(db: FarmDB, user: User, changed: Json<NewApiUser>) -> ApiRe
     changed.sanitize();
     changed.validate()?;
     if user.email.ne(&changed.email) {
-        if let Some(found) = username_by_identity(&db, changed.email.clone()).await? {
-            if !user.username.eq(&found) {
-                return Err(ValidationApiError::for_fields(HashMap::from([
-                        ("email".to_string(), vec!["Email already in use".to_string()]),
-                    ])).into()
-                );
-            }
-        }
+        check_email_availability(&db, user, &changed).await?;
     }
     user::default_user_change(&db, DefaultUserChange {
         firstname: changed.firstname,
@@ -160,6 +153,18 @@ async fn change_user(db: FarmDB, user: User, changed: Json<NewApiUser>) -> ApiRe
         username: changed.username,
         email: changed.email,
     }).await?;
+    Ok(())
+}
+
+async fn check_email_availability(db: &FarmDB, user: User, changed: &NewApiUser) -> ApiResult<()> {
+    if let Some(found) = username_by_identity(db, changed.email.clone()).await? {
+        if !user.username.eq(&found) {
+            return Err(ValidationApiError::for_fields(HashMap::from([
+                ("email".to_string(), vec!["Email already in use".to_string()]),
+            ])).into()
+            );
+        }
+    }
     Ok(())
 }
 

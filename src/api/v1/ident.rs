@@ -62,10 +62,10 @@ pub async fn login_jwt(db: FarmDB, credentials: Json<LoginCredentials>) -> ApiRe
     let username = if let Some(name) = username_by_identity(&db, identity).await.ok().flatten() {
         name
     } else {
-        return Ok(None)
+        return Ok(None);
     };
     if !check_login(&db, username.clone(), credentials.0.password).await? {
-        return Ok(None)
+        return Ok(None);
     };
 
     if let Ok(token) = create_jwt(username) {
@@ -83,11 +83,7 @@ impl<'r> FromRequest<'r> for User {
         let db = try_outcome!(request.guard::<FarmDB>().await);
         let username = request.headers()
             .get_one("Authorization")
-            .and_then(|header|  decode::<Claims>(header, &DecodingKey::from_secret(JWT_SECRET.as_bytes()), &Validation::new(Algorithm::HS512)).ok())
-            .map(|token_data| token_data.claims)
-            .filter(|claims| claims.exp >= Utc::now().timestamp() as usize)
-            .map(|claims| claims.subject_id)
-            .map(|s| s.to_lowercase());
+            .and_then(username_from_valid_jwt_token);
         if let Some(username) = username {
             crate::data::user::by_username(&db, username).await.ok()
                 .flatten()
@@ -96,6 +92,16 @@ impl<'r> FromRequest<'r> for User {
             Outcome::Forward(Status::Unauthorized)
         }
     }
+}
+
+fn username_from_valid_jwt_token(jwt_token: &str) -> Option<String> {
+    let decoding_key = DecodingKey::from_secret(JWT_SECRET.as_bytes());
+    let validation = Validation::new(Algorithm::HS512);
+    decode::<Claims>(jwt_token, &decoding_key, &validation).ok()
+        .map(|token_data| token_data.claims)
+        .filter(|claims| claims.exp >= Utc::now().timestamp() as usize)
+        .map(|claims| claims.subject_id)
+        .map(|s| s.to_lowercase())
 }
 
 pub struct JwtRefreshFairing;
