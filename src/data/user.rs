@@ -17,6 +17,7 @@ pub struct User {
     pub email: String,
     pub password: String,
     pub sysadmin: i32,
+    pub farmowner: i32,
 }
 
 #[derive(Deserialize)]

@@ -76,6 +76,7 @@ diesel::table! {
         email -> Text,
         password -> Text,
         sysadmin -> Integer,
+        farmowner -> Integer,
     }
 }
 
