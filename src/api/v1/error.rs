@@ -11,6 +11,8 @@ pub enum ApiError {
     Database(diesel::result::Error),
     WrongCredentials,
     Validation(ValidationError),
+    #[from(ignore)]
+    MissingPrivilege(String),
 }
 
 impl<'r> Responder<'r, 'static> for ApiError {
@@ -22,6 +24,7 @@ impl<'r> Responder<'r, 'static> for ApiError {
                 let body = serde_json::to_string(&validation).expect("validation");
                 Response::build().status(Status::BadRequest).sized_body(body.len(), Cursor::new(body)).ok()
             },
+            ApiError::MissingPrivilege(msg) => unauthorized_with_body(msg),
         }
     }
 }
@@ -46,4 +49,11 @@ impl ValidationError {
             invalid_fields: fields,
         }
     }
+}
+
+fn unauthorized_with_body(body: String) -> rocket::response::Result<'static> {
+    Response::build()
+        .status(Status::Unauthorized)
+        .sized_body(body.len(), Cursor::new(body))
+        .ok()
 }
