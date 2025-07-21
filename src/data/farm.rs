@@ -94,10 +94,8 @@ pub async fn get_farms_near(db: FarmDB, lat: f32, lon: f32, radius: f32) -> Quer
         let f = farms::table
             .inner_join(farm_locations::table)
             .inner_join(geolocations::table.on(farm_locations::location_id.eq(geolocations::id)))
-            .filter(geolocations::lat.ge(lat - radius))
-            .filter(geolocations::lat.le(lat + radius))
-            .filter(geolocations::lon.ge(lon - radius))
-            .filter(geolocations::lon.le(lon + radius))
+            .filter(geolocations::lat.between(lat-radius, lat+radius))
+            .filter(geolocations::lon.between(lon-radius, lon+radius))
             .select(Farm::as_select())
             .load::<Farm>(conn)?;
         Ok(f)

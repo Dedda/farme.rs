@@ -49,7 +49,9 @@ impl StringCriteria for StringLengthCriteria {
         let len = value.chars().count();
         if let Some(min) = self.min {
             if len < min {
-                return Err(format!("Expected mininum {min} characters but got only {len}."));
+                return Err(format!(
+                    "Expected mininum {min} characters but got only {len}."
+                ));
             }
         }
         if let Some(max) = self.max {
@@ -83,9 +85,11 @@ impl StringCriteria for RequiredCharacterGroupCriteria {
             Ok(())
         } else {
             #[allow(unstable_name_collisions)]
-            Err(format!("Expected one of `{}` but got `{}`.", self.chars.iter()
-                .intersperse(&',')
-                .collect::<String>(), value))
+            Err(format!(
+                "Expected one of `{}` but got `{}`.",
+                self.chars.iter().intersperse(&',').collect::<String>(),
+                value
+            ))
         }
     }
 }
@@ -130,7 +134,9 @@ impl StringValidator {
 
 impl Validator<&str> for StringValidator {
     fn validate(&self, value: &str) -> Result<(), ValidationError> {
-        let error_messages: Vec<String> = self.criteria.iter()
+        let error_messages: Vec<String> = self
+            .criteria
+            .iter()
             .map(|c| c.validate(value))
             .filter(|res| res.is_err())
             .map(|res| res.unwrap_err())
@@ -145,28 +151,72 @@ impl Validator<&str> for StringValidator {
     }
 }
 
+pub struct EmailValidator;
+
+impl Validator<&str> for EmailValidator {
+    fn validate(&self, value: &str) -> Result<(), ValidationError> {
+        RegexValidator::new(include_str!("email_regex.txt"))
+            .expect("Cannot parse email regex")
+            .validate(value)
+            .map_err(|msg| ValidationError {
+                messages: vec![msg],
+            })
+    }
+}
+
+pub struct PasswordValidator;
+
+impl Validator<&str> for PasswordValidator {
+    fn validate(&self, value: &str) -> Result<(), ValidationError> {
+        let mut validator = StringValidator::new();
+        validator.add_criteria(StringLengthCriteria::min(8));
+        validator.add_criteria(RequiredCharacterGroupCriteria::range('a', 'z'));
+        validator.add_criteria(RequiredCharacterGroupCriteria::range('A', 'Z'));
+        validator.add_criteria(RequiredCharacterGroupCriteria::range('0', '9'));
+        validator.add_criteria(RequiredCharacterGroupCriteria::new(
+            "!?.-_#$&".chars().collect(),
+        ));
+        validator.validate(value)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     mod strings {
-        use crate::validation::{RequiredCharacterGroupCriteria, StringCriteria, StringLengthCriteria, StringValidator, Validator};
+        use crate::validation::{
+            RequiredCharacterGroupCriteria, StringCriteria, StringLengthCriteria, StringValidator,
+            Validator,
+        };
 
         #[test]
         fn string_length() {
             let min_validator = StringLengthCriteria::min(5);
             assert!(min_validator.validate("12345").is_ok());
             assert!(min_validator.validate("ä€`ñ0").is_ok());
-            assert_eq!("Expected mininum 5 characters but got only 4.", min_validator.validate("ä€`ñ").unwrap_err());
+            assert_eq!(
+                "Expected mininum 5 characters but got only 4.",
+                min_validator.validate("ä€`ñ").unwrap_err()
+            );
 
             let max_validator = StringLengthCriteria::max(5);
             assert!(max_validator.validate("12345").is_ok());
             assert!(max_validator.validate("ä€`ñ0").is_ok());
-            assert_eq!("Expected maximum 5 characters but got 6.", max_validator.validate("ä€`ñ56").unwrap_err());
+            assert_eq!(
+                "Expected maximum 5 characters but got 6.",
+                max_validator.validate("ä€`ñ56").unwrap_err()
+            );
 
             let validator = StringLengthCriteria::new(5, 6);
             assert!(validator.validate("12345").is_ok());
             assert!(validator.validate("ä€`ñ06").is_ok());
-            assert_eq!("Expected mininum 5 characters but got only 4.", min_validator.validate("ä€`ñ").unwrap_err());
-            assert_eq!("Expected maximum 6 characters but got 7.", validator.validate("ä€`ñ567").unwrap_err());
+            assert_eq!(
+                "Expected mininum 5 characters but got only 4.",
+                min_validator.validate("ä€`ñ").unwrap_err()
+            );
+            assert_eq!(
+                "Expected maximum 6 characters but got 7.",
+                validator.validate("ä€`ñ567").unwrap_err()
+            );
         }
 
         #[test]
@@ -175,13 +225,19 @@ mod tests {
             assert!(chars.validate("adefg").is_ok());
             assert!(chars.validate("bdefg").is_ok());
             assert!(chars.validate("cdefg").is_ok());
-            assert_eq!(Err("Expected one of `a,b,c` but got `def`.".to_string()), chars.validate("def"));
+            assert_eq!(
+                Err("Expected one of `a,b,c` but got `def`.".to_string()),
+                chars.validate("def")
+            );
 
             let chars = RequiredCharacterGroupCriteria::range('a', 'c');
             assert!(chars.validate("adefg").is_ok());
             assert!(chars.validate("bdefg").is_ok());
             assert!(chars.validate("cdefg").is_ok());
-            assert_eq!(Err("Expected one of `a,b,c` but got `def`.".to_string()), chars.validate("def"));
+            assert_eq!(
+                Err("Expected one of `a,b,c` but got `def`.".to_string()),
+                chars.validate("def")
+            );
         }
 
         #[test]
@@ -194,6 +250,5 @@ mod tests {
             assert!(validator.validate("abcDEF0189").is_ok());
             assert_eq!(validator.validate(".").unwrap_err().messages.len(), 4);
         }
-
     }
 }
