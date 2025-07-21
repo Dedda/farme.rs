@@ -1,9 +1,9 @@
-use crate::api::Result as ApiResult;
 use crate::api::v1::error::{ApiError, ValidationError as ValidationApiError};
 use crate::api::v1::ident::LoginCredentials;
+use crate::api::Result as ApiResult;
 use crate::data::user::{self, username_by_identity, DefaultUserChange, NewUser, User};
 use crate::data::FarmDB;
-use crate::validation::{RegexValidator, RequiredCharacterGroupCriteria, StringCriteria, StringLengthCriteria, StringValidator, Validator};
+use crate::validation::{EmailValidator, PasswordValidator, StringLengthCriteria, StringValidator, Validator};
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::serde::Serialize;
@@ -78,12 +78,9 @@ impl NewApiUser {
     }
 
     fn validate_email(&self) -> Option<Vec<String>> {
-        let validatpr = RegexValidator::new(include_str!("email_regex.txt")).expect("Cannot parse email regex");
-        if let Err(err) = validatpr.validate(&self.email) {
-            Some(vec![err])
-        } else {
-            None
-        }
+        EmailValidator.validate(&self.email)
+            .err()
+            .map(|err| err.messages)
     }
 
     fn validate_password(&self) -> Option<Vec<String>> {
@@ -92,17 +89,9 @@ impl NewApiUser {
 }
 
 fn validate_password(password: &str) -> Option<Vec<String>> {
-    let mut validator = StringValidator::new();
-    validator.add_criteria(StringLengthCriteria::min(8));
-    validator.add_criteria(RequiredCharacterGroupCriteria::range('a', 'z'));
-    validator.add_criteria(RequiredCharacterGroupCriteria::range('A', 'Z'));
-    validator.add_criteria(RequiredCharacterGroupCriteria::range('0', '9'));
-    validator.add_criteria(RequiredCharacterGroupCriteria::new("!?.-_#$&".chars().collect()));
-    if let Err(err) =  validator.validate(password) {
-        Some(err.messages)
-    } else {
-        None
-    }
+    PasswordValidator.validate(password)
+        .err()
+        .map(|err| err.messages)
 }
 
 #[derive(Serialize, Deserialize)]
