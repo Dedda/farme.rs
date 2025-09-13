@@ -236,7 +236,7 @@ mod tests {
             .expect("cannot launch rocket");
         let client = Client::untracked(rocket)
             .await
-            .expect("valid rocket instance");
+            .expect("invalid rocket instance");
         let new_api_user = NewApiUser {
             firstname: "Firstuser".to_string(),
             lastname: "Lastuser".to_string(),

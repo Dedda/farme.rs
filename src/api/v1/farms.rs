@@ -11,7 +11,7 @@ pub fn routes() -> Vec<rocket::Route> {
     rocket::routes![list_farms, get_farms_near, get_full_farm, create_farm]
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct ApiFarm {
     name: String,
 }
@@ -24,7 +24,7 @@ impl From<Farm> for ApiFarm {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct NewApiFarm {
     name: String,
 }
@@ -64,3 +64,37 @@ async fn create_farm(db: FarmDB, user: User, farm: Json<NewApiFarm>) -> ApiResul
     let new_farm = farm::create_farm(&db, &user, new_farm).await?;
     Ok(Json(new_farm.into()))
 }
+
+// #[cfg(test)]
+// mod tests {
+//     use rocket::{local::asynchronous::Client, response};
+//     use rocket::http::{ContentType, Status};
+//     use crate::api::v1::farms::ApiFarm;
+//
+//     use super::NewApiFarm;
+//
+//     async fn farm_api_crud() {
+//         let rocket = crate::rocket()
+//             .ignite()
+//             .await
+//             .expect("cannot launch rocket");
+//         let client = Client::untracked(rocket)
+//             .await
+//             .expect("invalid rocket instance");
+//         let new_api_farm = NewApiFarm {
+//             name: "Test Farm".to_string(),
+//             lat: 12.0,
+//             lon: 34.0,
+//         };
+//         let req = client.post("/api/v1/farms/create");
+//         let response = req
+//             .body(serde_json::to_string(&new_api_farm).expect("failed to serialize farm"))
+//             .dispatch().await;
+//         assert_eq!(response.status(), Status::Ok);
+//         assert_eq!(response.content_type(), Some(ContentType::JSON));
+//         let farm: ApiFarm = response.into_json().await.expect("failed to deserialize farm");
+//         assert_eq!(farm.name, "Test Farm");
+//         let id = farm.id;
+//     }
+//
+// }
