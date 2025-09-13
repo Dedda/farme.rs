@@ -3,7 +3,7 @@ pub mod schema;
 mod api;
 mod validation;
 
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use api::v1::ident::JwtRefreshFairing;
 use rocket::http::Method;
 use rocket::{launch, routes, Build, Rocket};

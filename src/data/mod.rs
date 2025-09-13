@@ -5,9 +5,10 @@ use rocket_sync_db_pools::diesel;
 
 pub mod farm;
 pub mod user;
+pub mod location;
 
-#[database("sqlite_farm")]
-pub struct FarmDB(diesel::SqliteConnection);
+#[database("psql_farm")]
+pub struct FarmDB(diesel::PgConnection);
 
 async fn run_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
     use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};

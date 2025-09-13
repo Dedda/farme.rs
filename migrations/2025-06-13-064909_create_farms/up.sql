@@ -1,18 +1,18 @@
 -- Your SQL goes here
 CREATE TABLE farms (
-    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    id SERIAL NOT NULL PRIMARY KEY,
     name TEXT NOT NULL,
     created TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE geolocations (
-    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    lat FLOAT NOT NULL,
-    lon FLOAT NOT NULL
+    id SERIAL NOT NULL PRIMARY KEY,
+    lat REAL NOT NULL,
+    lon REAL NOT NULL
 );
 
 CREATE TABLE farm_locations (
-    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    id SERIAL NOT NULL PRIMARY KEY,
     farm_id INTEGER UNIQUE NOT NULL ,
     location_id INTEGER NOT NULL,
     FOREIGN KEY (farm_id) REFERENCES farms(id) ON DELETE CASCADE,
@@ -20,7 +20,7 @@ CREATE TABLE farm_locations (
 );
 
 CREATE TABLE opening_hours (
-    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    id SERIAL NOT NULL PRIMARY KEY,
     farm_id INTEGER NOT NULL,
     weekday INTEGER NOT NULL,
     open TIME NOT NULL,
@@ -29,12 +29,12 @@ CREATE TABLE opening_hours (
 );
 
 CREATE TABLE shop_types (
-    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    id SERIAL NOT NULL PRIMARY KEY,
     name TEXT NOT NULL UNIQUE
 );
 
 CREATE TABLE farm_shop_types (
-    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    id SERIAL NOT NULL PRIMARY KEY,
     farm_id INTEGER NOT NULL,
     shop_type_id INTEGER NOT NULL,
     FOREIGN KEY (farm_id) REFERENCES farms(id) ON DELETE CASCADE,
@@ -43,7 +43,7 @@ CREATE TABLE farm_shop_types (
 );
 
 CREATE TABLE contact (
-    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    id SERIAL NOT NULL PRIMARY KEY,
     farm_id INTEGER NOT NULL,
     email TEXT,
     phone TEXT,
@@ -51,6 +51,6 @@ CREATE TABLE contact (
     FOREIGN KEY (farm_id) REFERENCES farms(id) ON DELETE CASCADE
 );
 
-INSERT OR IGNORE INTO shop_types(id, name) VALUES (1, 'store');
-INSERT OR IGNORE INTO shop_types(id, name) VALUES (2, 'self-service');
-INSERT OR IGNORE INTO shop_types(id, name) VALUES (3, 'vending machine');
+INSERT INTO shop_types(id, name) VALUES (1, 'store') ON CONFLICT DO NOTHING;
+INSERT INTO shop_types(id, name) VALUES (2, 'self-service') ON CONFLICT DO NOTHING;
+INSERT INTO shop_types(id, name) VALUES (3, 'vending machine') ON CONFLICT DO NOTHING;
