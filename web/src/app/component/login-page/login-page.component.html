@@ -1,31 +1,31 @@
-<div class="container">
-    <h1>Login</h1>
+<h1>Login</h1>
 
-    <form (ngSubmit)="loginAction()">
-        <div>
-            <label for="identity">Username or password</label>
-            <input
-                    type="text"
-                    id="identity"
-                    name="identity"
-                    required
-                    [(ngModel)]="identity"/>
-        </div>
-        <div>
-            <label for="password">Password</label>
-            <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    required
-                    [(ngModel)]="password"/>
-        </div>
-        <div>
-            <button
-                    class="loginbtn"
-                    [disabled]="submitting || !validate()"
-                    type="submit">Login
-            </button>
-        </div>
-    </form>
-</div>
+<form (ngSubmit)="loginAction()">
+    <div class="form-floating">
+        <input
+                class="form-control"
+                type="text"
+                id="identity"
+                name="identity"
+                required
+                [(ngModel)]="identity"/>
+        <label for="identity">Username or email</label>
+    </div>
+    <div class="form-floating">
+        <input
+                class="form-control"
+                type="password"
+                id="password"
+                name="password"
+                required
+                [(ngModel)]="password"/>
+        <label for="password">Password</label>
+    </div>
+    <div>
+        <button
+                class="btn btn-primary"
+                [disabled]="submitting || !validate()"
+                type="submit">Login
+        </button>
+    </div>
+</form>

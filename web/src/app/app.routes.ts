@@ -9,12 +9,12 @@ import {UserChangePageComponent} from "./component/user-change-page/user-change-
 import {PasswordChangePageComponent} from "./component/password-change-page/password-change-page.component";
 
 export const routes: Routes = [
-    {path: '', component: HomePageComponent},
-    {path: 'register', component: RegisterPageComponent},
-    {path: 'login', component: LoginPageComponent},
-    {path: 'user', component: UserPageComponent},
-    {path: 'user/change', component: UserChangePageComponent},
-    {path: 'user/pwchange', component: PasswordChangePageComponent},
-    {path: 'farms/:id', component: FarmDetailsComponent},
-    {path: 'farms', component: FarmListComponent},
+    {path: '', component: HomePageComponent, data: {breadcrumb: 'Home'}},
+    {path: 'register', component: RegisterPageComponent, data: {breadcrumb: 'Register'}},
+    {path: 'login', component: LoginPageComponent, data: {breadcrumb: 'Login'}},
+    {path: 'user', component: UserPageComponent, data: {breadcrumb: 'Profile'}},
+    {path: 'user/change', component: UserChangePageComponent, data: {breadcrumb: 'Change'}},
+    {path: 'user/pwchange', component: PasswordChangePageComponent, data: {breadcrumb: 'Change Password'}},
+    {path: 'farms/:id', component: FarmDetailsComponent, data: {breadcrumb: ''}},
+    {path: 'farms', component: FarmListComponent, data: {breadcrumb: 'Farms'}},
 ];

@@ -1,5 +1,15 @@
+@import 'bootstrap/dist/css/bootstrap.min.css';
+
 body {
     margin: 0;
+}
+
+.bg-green {
+    background-color: #04AA6D;
+}
+
+main {
+    padding-top: 70px;
 }
 
 /*:host {*/
