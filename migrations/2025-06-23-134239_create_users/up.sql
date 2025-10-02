@@ -1,6 +1,6 @@
 -- Your SQL goes here
 CREATE TABLE users (
-    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    id SERIAL NOT NULL PRIMARY KEY,
     firstname TEXT NOT NULL,
     lastname TEXT NOT NULL,
     username TEXT UNIQUE NOT NULL,
@@ -10,7 +10,7 @@ CREATE TABLE users (
 );
 
 CREATE TABLE farm_admins (
-    id INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    id SERIAL NOT NULL PRIMARY KEY,
     user_id INTEGER NOT NULL,
     farm_id INTEGER NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(id),
