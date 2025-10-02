@@ -1,18 +1,27 @@
+use crate::api::Result as ApiResult;
 use crate::api::v1::error::{ApiError, ValidationError as ValidationApiError};
 use crate::api::v1::ident::LoginCredentials;
-use crate::api::Result as ApiResult;
-use crate::data::user::{self, username_by_identity, DefaultUserChange, NewUser, User};
 use crate::data::FarmDB;
-use crate::validation::{EmailValidator, PasswordValidator, StringLengthCriteria, StringValidator, Validator};
+use crate::data::user::{self, DefaultUserChange, NewUser, User, username_by_identity};
+use crate::validation::{
+    EmailValidator, PasswordValidator, StringLengthCriteria, StringValidator, Validator,
+};
 use rocket::http::Status;
-use rocket::serde::json::Json;
 use rocket::serde::Serialize;
+use rocket::serde::json::Json;
 use rocket::{get, post, routes};
 use serde::Deserialize;
 use std::collections::HashMap;
 
 pub fn routes() -> Vec<rocket::Route> {
-    routes![login_jwt, create_user, current_user, no_current_user, change_user, change_password]
+    routes![
+        login_jwt,
+        create_user,
+        current_user,
+        no_current_user,
+        change_user,
+        change_password
+    ]
 }
 
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
@@ -65,7 +74,7 @@ impl NewApiUser {
     fn validate_username(&self) -> Option<Vec<String>> {
         let mut validator = StringValidator::new();
         validator.add_criteria(StringLengthCriteria::min(3));
-        if let Err(err) =  validator.validate(&self.password) {
+        if let Err(err) = validator.validate(&self.password) {
             return Some(err.messages);
         }
         if self.username.chars().any(|c| !c.is_alphanumeric()) {
@@ -78,7 +87,8 @@ impl NewApiUser {
     }
 
     fn validate_email(&self) -> Option<Vec<String>> {
-        EmailValidator.validate(&self.email)
+        EmailValidator
+            .validate(&self.email)
             .err()
             .map(|err| err.messages)
     }
@@ -89,7 +99,8 @@ impl NewApiUser {
 }
 
 fn validate_password(password: &str) -> Option<Vec<String>> {
-    PasswordValidator.validate(password)
+    PasswordValidator
+        .validate(password)
         .err()
         .map(|err| err.messages)
 }
@@ -137,33 +148,42 @@ async fn change_user(db: FarmDB, user: User, changed: Json<NewApiUser>) -> ApiRe
         return Err(ApiError::WrongCredentials);
     }
     if user.username.ne(&changed.username) {
-        return Err(ValidationApiError::new("Cannot change user".to_string(), HashMap::from([
-                ("username".to_string(), vec!["May not change username".to_string()]),
-            ]),
-        ).into());
+        return Err(ValidationApiError::new(
+            "Cannot change user".to_string(),
+            HashMap::from([(
+                "username".to_string(),
+                vec!["May not change username".to_string()],
+            )]),
+        )
+        .into());
     }
     changed.sanitize();
     changed.validate()?;
     if user.email.ne(&changed.email) {
         check_email_availability(&db, user, &changed).await?;
     }
-    user::default_user_change(&db, DefaultUserChange {
-        firstname: changed.firstname,
-        lastname: changed.lastname,
-        username: changed.username,
-        email: changed.email,
-    }).await?;
+    user::default_user_change(
+        &db,
+        DefaultUserChange {
+            firstname: changed.firstname,
+            lastname: changed.lastname,
+            username: changed.username,
+            email: changed.email,
+        },
+    )
+    .await?;
     Ok(())
 }
 
 async fn check_email_availability(db: &FarmDB, user: User, changed: &NewApiUser) -> ApiResult<()> {
-    if let Some(found) = username_by_identity(db, changed.email.clone()).await? {
-        if !user.username.eq(&found) {
-            return Err(ValidationApiError::for_fields(HashMap::from([
-                ("email".to_string(), vec!["Email already in use".to_string()]),
-            ])).into()
-            );
-        }
+    if let Some(found) = username_by_identity(db, changed.email.clone()).await?
+        && !user.username.eq(&found)
+    {
+        return Err(ValidationApiError::for_fields(HashMap::from([(
+            "email".to_string(),
+            vec!["Email already in use".to_string()],
+        )]))
+        .into());
     }
     Ok(())
 }
@@ -175,11 +195,24 @@ struct PasswordChangeRequest {
 }
 
 #[post("/change-password", data = "<change_request>")]
-async fn change_password(db: FarmDB, user: User, change_request: Json<PasswordChangeRequest>) -> ApiResult<()> {
+async fn change_password(
+    db: FarmDB,
+    user: User,
+    change_request: Json<PasswordChangeRequest>,
+) -> ApiResult<()> {
     if let Some(errors) = validate_password(&change_request.new_password) {
-        return Err(ValidationApiError::for_fields(HashMap::from([("password".to_string(), errors)])).into());
+        return Err(ValidationApiError::for_fields(HashMap::from([(
+            "password".to_string(),
+            errors,
+        )]))
+        .into());
     }
-    user::check_login(&db, user.username.clone(), change_request.old_password.clone()).await?;
+    user::check_login(
+        &db,
+        user.username.clone(),
+        change_request.old_password.clone(),
+    )
+    .await?;
     user::password_change(&db, user.username, change_request.new_password.clone()).await?;
     Ok(())
 }
@@ -200,9 +233,9 @@ mod tests {
     use crate::api::v1::users::ApiUser;
     use crate::api::v1::users::NewApiUser;
     use crate::api::v1::users::PasswordChangeRequest;
+    use crate::data::FarmDB;
     use crate::data::user;
     use crate::data::user::check_login;
-    use crate::data::FarmDB;
     use diesel::{ExpressionMethods, RunQueryDsl};
     use rocket::http::Header;
     use rocket::http::{ContentType, Status};
@@ -218,13 +251,16 @@ mod tests {
             password: "".to_string(),
         };
         user.sanitize();
-        assert_eq!(user, NewApiUser {
-            firstname: "Test".to_string(),
-            lastname: "User".to_string(),
-            username: "testuser".to_string(),
-            email: "test@test.com".to_string(),
-            password: "".to_string(),
-        });
+        assert_eq!(
+            user,
+            NewApiUser {
+                firstname: "Test".to_string(),
+                lastname: "User".to_string(),
+                username: "testuser".to_string(),
+                email: "test@test.com".to_string(),
+                password: "".to_string(),
+            }
+        );
     }
 
     #[tokio::test]
@@ -248,16 +284,22 @@ mod tests {
         let req = client.post("/api/v1/users/create");
         let response = req
             .body(serde_json::to_string(&new_api_user).expect("failed to serialize user"))
-            .dispatch().await;
+            .dispatch()
+            .await;
         assert_eq!(response.status(), Status::Ok);
         assert_eq!(response.content_type(), Some(ContentType::JSON));
-        let user: ApiUser = response.into_json().await.expect("failed to deserialize json");
+        let user: ApiUser = response
+            .into_json()
+            .await
+            .expect("failed to deserialize json");
         assert_eq!(user.firstname, "Firstuser");
         assert_eq!(user.lastname, "Lastuser");
         assert_eq!(user.username, "testusername");
         assert_eq!(user.email, "test@test.com");
         let id = user.id;
-        let db = FarmDB::get_one(client.rocket()).await.expect("failed to get db");
+        let db = FarmDB::get_one(client.rocket())
+            .await
+            .expect("failed to get db");
         let password = new_api_user.password.clone();
         let password_check = check_login(&db, new_api_user.username, new_api_user.password)
             .await
@@ -265,14 +307,22 @@ mod tests {
         assert!(password_check);
         // login via API
         let req = client.post("/login-jwt");
-        let response = req.body(serde_json::to_string(&LoginCredentials {
-                identity: user.username.clone(),
-                password: password.clone(),
-            }).expect("failed to serialize login credentials"))
-            .dispatch().await;
+        let response = req
+            .body(
+                serde_json::to_string(&LoginCredentials {
+                    identity: user.username.clone(),
+                    password: password.clone(),
+                })
+                .expect("failed to serialize login credentials"),
+            )
+            .dispatch()
+            .await;
         assert_eq!(response.status(), Status::Ok);
         assert_eq!(response.content_type(), Some(ContentType::Text));
-        let token = response.into_string().await.expect("cannot read login response body");
+        let token = response
+            .into_string()
+            .await
+            .expect("cannot read login response body");
         assert!(!token.is_empty());
         // change user via API
         let changed_user = NewApiUser {
@@ -283,15 +333,20 @@ mod tests {
             password: password.clone(),
         };
         let req = client.post("/api/v1/users/change");
-        let response = req.body(
-                serde_json::to_string(&changed_user).expect("failed to serialize change user"),
-            )
+        let response = req
+            .body(serde_json::to_string(&changed_user).expect("failed to serialize change user"))
             .header(Header::new("Authorization", token))
-            .dispatch().await;
-        let token = response.headers().get_one("Authorization").expect("no authorization header").to_string();
+            .dispatch()
+            .await;
+        let token = response
+            .headers()
+            .get_one("Authorization")
+            .expect("no authorization header")
+            .to_string();
         assert_eq!(response.status(), Status::Ok);
         // check user changes
-        let changed = user::by_username(&db, "testusername".to_string()).await
+        let changed = user::by_username(&db, "testusername".to_string())
+            .await
             .expect("failed to get user by username")
             .expect("failed to find changed user by username");
         assert_eq!(changed.firstname, "Firsty");
@@ -300,14 +355,17 @@ mod tests {
         assert_eq!(changed.email, "test123@test456.com");
         // change password via API
         let req = client.post("/api/v1/users/change-password");
-        let response = req.body(
+        let response = req
+            .body(
                 serde_json::to_string(&PasswordChangeRequest {
                     old_password: password,
                     new_password: "na9e8#aKsO".to_string(),
-                }).expect("failed to serialize password change")
+                })
+                .expect("failed to serialize password change"),
             )
             .header(Header::new("Authorization", token))
-            .dispatch().await;
+            .dispatch()
+            .await;
         assert_eq!(response.status(), Status::Ok);
         let password_check = check_login(&db, "testusername".to_string(), "na9e8#aKsO".to_string())
             .await
@@ -319,6 +377,7 @@ mod tests {
                 .filter(crate::schema::users::id.eq(id))
                 .execute(conn)
                 .expect("Cannot delete user");
-        }).await;
+        })
+        .await;
     }
 }

@@ -47,17 +47,17 @@ impl StringLengthCriteria {
 impl StringCriteria for StringLengthCriteria {
     fn validate(&self, value: &str) -> Result<(), String> {
         let len = value.chars().count();
-        if let Some(min) = self.min {
-            if len < min {
-                return Err(format!(
-                    "Expected mininum {min} characters but got only {len}."
-                ));
-            }
+        if let Some(min) = self.min
+            && len < min
+        {
+            return Err(format!(
+                "Expected mininum {min} characters but got only {len}."
+            ));
         }
-        if let Some(max) = self.max {
-            if len > max {
-                return Err(format!("Expected maximum {max} characters but got {len}."));
-            }
+        if let Some(max) = self.max
+            && len > max
+        {
+            return Err(format!("Expected maximum {max} characters but got {len}."));
         }
         Ok(())
     }

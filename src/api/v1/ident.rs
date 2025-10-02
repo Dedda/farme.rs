@@ -1,24 +1,22 @@
 use crate::api::Result as ApiResult;
-use crate::data::user::{check_login, username_by_identity, User};
 use crate::data::FarmDB;
+use crate::data::user::{User, check_login, username_by_identity};
 use chrono::{Duration, Utc};
-use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use lazy_static::lazy_static;
 use rocket::fairing::{Fairing, Info, Kind};
 use rocket::http::Status;
-use rocket::outcome::{try_outcome, IntoOutcome};
+use rocket::outcome::{IntoOutcome, try_outcome};
 use rocket::request::{FromRequest, Outcome};
 use rocket::serde::json::Json;
-use rocket::{async_trait, post, Request, Response};
+use rocket::{Request, Response, async_trait, post};
 use serde::{Deserialize, Serialize};
 
 #[cfg(not(test))]
 use std::env;
 #[cfg(not(test))]
 lazy_static! {
-    static ref JWT_SECRET: String = {
-        env::var("JWT_SECRET").expect("JWT_SECRET must be set.")
-    };
+    static ref JWT_SECRET: String = env::var("JWT_SECRET").expect("JWT_SECRET must be set.");
 }
 
 #[cfg(test)]
@@ -45,7 +43,10 @@ pub struct Claims {
 
 fn create_jwt(username: String) -> Result<String, jsonwebtoken::errors::Error> {
     let username = username.trim().to_lowercase();
-    let expiration = Utc::now().checked_add_signed(Duration::minutes(15)).expect("invalid timestamp").timestamp();
+    let expiration = Utc::now()
+        .checked_add_signed(Duration::minutes(15))
+        .expect("invalid timestamp")
+        .timestamp();
 
     let claims = Claims {
         subject_id: username,
@@ -53,11 +54,18 @@ fn create_jwt(username: String) -> Result<String, jsonwebtoken::errors::Error> {
     };
 
     let header = Header::new(Algorithm::HS512);
-    encode(&header, &claims, &EncodingKey::from_secret(JWT_SECRET.as_bytes()))
+    encode(
+        &header,
+        &claims,
+        &EncodingKey::from_secret(JWT_SECRET.as_bytes()),
+    )
 }
 
 #[post("/login-jwt", data = "<credentials>")]
-pub async fn login_jwt(db: FarmDB, credentials: Json<LoginCredentials>) -> ApiResult<Option<String>> {
+pub async fn login_jwt(
+    db: FarmDB,
+    credentials: Json<LoginCredentials>,
+) -> ApiResult<Option<String>> {
     let identity = credentials.identity.trim().to_lowercase();
     let username = if let Some(name) = username_by_identity(&db, identity).await.ok().flatten() {
         name
@@ -81,11 +89,14 @@ impl<'r> FromRequest<'r> for User {
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let db = try_outcome!(request.guard::<FarmDB>().await);
-        let username = request.headers()
+        let username = request
+            .headers()
             .get_one("Authorization")
             .and_then(username_from_valid_jwt_token);
         if let Some(username) = username {
-            crate::data::user::by_username(&db, username).await.ok()
+            crate::data::user::by_username(&db, username)
+                .await
+                .ok()
                 .flatten()
                 .or_forward(Status::Unauthorized)
         } else {
@@ -97,7 +108,8 @@ impl<'r> FromRequest<'r> for User {
 fn username_from_valid_jwt_token(jwt_token: &str) -> Option<String> {
     let decoding_key = DecodingKey::from_secret(JWT_SECRET.as_bytes());
     let validation = Validation::new(Algorithm::HS512);
-    decode::<Claims>(jwt_token, &decoding_key, &validation).ok()
+    decode::<Claims>(jwt_token, &decoding_key, &validation)
+        .ok()
         .map(|token_data| token_data.claims)
         .filter(|claims| claims.exp >= Utc::now().timestamp() as usize)
         .map(|claims| claims.subject_id)
@@ -108,7 +120,6 @@ pub struct JwtRefreshFairing;
 
 #[async_trait]
 impl Fairing for JwtRefreshFairing {
-
     fn info(&self) -> Info {
         Info {
             name: "JWT Refresh Fairing",
@@ -117,10 +128,10 @@ impl Fairing for JwtRefreshFairing {
     }
 
     async fn on_response<'r>(&self, req: &'r Request<'_>, res: &mut Response<'r>) {
-        if let Outcome::Success(user) =  User::from_request(req).await {
-            if let Ok(token) = create_jwt(user.username) {
-                res.set_raw_header("Authorization", token);
-            }
+        if let Outcome::Success(user) = User::from_request(req).await
+            && let Ok(token) = create_jwt(user.username)
+        {
+            res.set_raw_header("Authorization", token);
         }
     }
 }
@@ -131,8 +142,7 @@ mod tests {
 
     #[test]
     fn jwt_creation() {
-        let token = create_jwt(String::from("testuser"))
-            .expect("failed to create JWT");
+        let token = create_jwt(String::from("testuser")).expect("failed to create JWT");
         assert!(!token.is_empty());
     }
 }
