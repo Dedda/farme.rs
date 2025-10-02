@@ -57,7 +57,7 @@ pub struct FarmAdmin {
     pub farm_id: i32,
 }
 
-pub async fn create_user(db: FarmDB, user: NewUser, password: String) -> QueryResult<User> {
+pub async fn create_user(db: &FarmDB, user: NewUser, password: String) -> QueryResult<User> {
     let salt = SaltString::generate(&mut OsRng);
     let password = Argon2::default().hash_password(password.as_bytes(), &salt).unwrap().to_string();
     let user = InsertableUser {

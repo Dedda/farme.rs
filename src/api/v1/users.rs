@@ -137,7 +137,7 @@ async fn create_user(db: FarmDB, user: Json<NewApiUser>) -> ApiResult<Json<ApiUs
     user.sanitize();
     user.validate()?;
     let password = user.password.clone();
-    let user = user::create_user(db, user.into(), password).await?;
+    let user = user::create_user(&db, user.into(), password).await?;
     Ok(Json(user.into()))
 }
 
@@ -239,7 +239,7 @@ mod tests {
     use diesel::{ExpressionMethods, RunQueryDsl};
     use rocket::http::Header;
     use rocket::http::{ContentType, Status};
-    use rocket::local::asynchronous::Client;
+    use crate::api::v1::test_utils::create_untracked_client;
 
     #[test]
     fn sanitize_new_api_user() {
@@ -265,14 +265,8 @@ mod tests {
 
     #[tokio::test]
     async fn user_api_crud() {
-        // launch rocket
-        let rocket = crate::rocket()
-            .ignite()
-            .await
-            .expect("cannot launch rocket");
-        let client = Client::untracked(rocket)
-            .await
-            .expect("valid rocket instance");
+        let client = create_untracked_client().await;
+
         let new_api_user = NewApiUser {
             firstname: "Firstuser".to_string(),
             lastname: "Lastuser".to_string(),

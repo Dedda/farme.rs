@@ -54,8 +54,7 @@ echo "database url is ${URL}"
 
 if [ -n "${WRITE_ENV}" ]; then
   echo 'updating env file...'
-  sed -i "s/ROCKET_DATABASES.*/ROCKET_DATABASES={pgfarm={url=\"${URL}\"}}/" .env
-#  echo "ROCKET_DATABASES={pgfarm={url=\"${URL}\"}}" > .env
+  sed -i "/ROCKET_DATABASES.*/ROCKET_DATABASES={pgfarm={url=\"${URL}\"}}/" .env
 fi
 
 if [[ -z $STORAGE ]]; then
