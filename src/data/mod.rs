@@ -7,7 +7,7 @@ pub mod farm;
 pub mod user;
 pub mod location;
 
-#[database("psql_farm")]
+#[database("pgfarm")]
 pub struct FarmDB(diesel::PgConnection);
 
 async fn run_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
@@ -24,7 +24,7 @@ async fn run_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
 }
 
 pub fn stage() -> AdHoc {
-    AdHoc::on_ignite("Diesel SQLite Stage", |rocket| async {
+    AdHoc::on_ignite("Diesel Postgres Stage", |rocket| async {
         rocket.attach(FarmDB::fairing())
             .attach(AdHoc::on_ignite("Diesel Migrations", run_migrations))
     })

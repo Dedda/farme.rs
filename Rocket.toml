@@ -1,2 +1,0 @@
-#[default.databases]
-#psql_farm = { url = "${DATABASE_URL}" }

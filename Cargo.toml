@@ -7,7 +7,7 @@ edition = "2024"
 argon2 = "0.5.3"
 chrono = { version = "0.4.41", features = ["serde"] }
 derive_more = { version = "2.0", features = ["from"] }
-diesel = { version = "2.2.10", features = ["chrono", "postgres"] }
+diesel = { version = "2.2.10", features = ["postgres", "chrono"] }
 diesel_migrations = "2.2.0"
 dotenvy = "0.15"
 itertools = "0.14.0"
