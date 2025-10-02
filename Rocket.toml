@@ -1,5 +1,0 @@
-[default.databases.sqlite_farm]
-url = "farm.sqlite"
-
-[default.databases.sqlite_farm_test]
-url = "test.sqlite"
