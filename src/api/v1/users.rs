@@ -1,14 +1,14 @@
-use crate::api::Result as ApiResult;
 use crate::api::v1::error::{ApiError, ValidationError as ValidationApiError};
 use crate::api::v1::ident::LoginCredentials;
+use crate::api::Result as ApiResult;
+use crate::data::user::{self, username_by_identity, DefaultUserChange, NewUser, User};
 use crate::data::FarmDB;
-use crate::data::user::{self, DefaultUserChange, NewUser, User, username_by_identity};
 use crate::validation::{
     EmailValidator, PasswordValidator, StringLengthCriteria, StringValidator, Validator,
 };
 use rocket::http::Status;
-use rocket::serde::Serialize;
 use rocket::serde::json::Json;
+use rocket::serde::Serialize;
 use rocket::{get, post, routes};
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -229,17 +229,16 @@ async fn no_current_user() -> Status {
 
 #[cfg(test)]
 mod tests {
-    use crate::api::v1::ident::LoginCredentials;
+    use crate::api::v1::test_utils::{create_untracked_client, login_user};
     use crate::api::v1::users::ApiUser;
     use crate::api::v1::users::NewApiUser;
     use crate::api::v1::users::PasswordChangeRequest;
-    use crate::data::FarmDB;
     use crate::data::user;
     use crate::data::user::check_login;
+    use crate::data::FarmDB;
     use diesel::{ExpressionMethods, RunQueryDsl};
     use rocket::http::Header;
     use rocket::http::{ContentType, Status};
-    use crate::api::v1::test_utils::create_untracked_client;
 
     #[test]
     fn sanitize_new_api_user() {
@@ -300,24 +299,7 @@ mod tests {
             .expect("failed to check user login");
         assert!(password_check);
         // login via API
-        let req = client.post("/login-jwt");
-        let response = req
-            .body(
-                serde_json::to_string(&LoginCredentials {
-                    identity: user.username.clone(),
-                    password: password.clone(),
-                })
-                .expect("failed to serialize login credentials"),
-            )
-            .dispatch()
-            .await;
-        assert_eq!(response.status(), Status::Ok);
-        assert_eq!(response.content_type(), Some(ContentType::Text));
-        let token = response
-            .into_string()
-            .await
-            .expect("cannot read login response body");
-        assert!(!token.is_empty());
+        let token = login_user(&client, &user.username, &password).await;
         // change user via API
         let changed_user = NewApiUser {
             firstname: "Firsty".to_string(),

@@ -149,3 +149,12 @@ pub async fn by_username(db: &FarmDB, username: String) -> QueryResult<Option<Us
         .optional()
     }).await
 }
+
+pub async fn make_farmowner(db: &FarmDB, user_id: i32) -> QueryResult<()> {
+    db.run(move |conn| {
+        diesel::update(users::table.filter(users::id.eq(user_id)))
+            .set(users::farmowner.eq(1))
+            .execute(conn)
+    }).await?;
+    Ok(())
+}

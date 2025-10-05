@@ -1,18 +1,18 @@
-use crate::api::Result as ApiResult;
 use crate::api::v1::error::ApiError;
-use crate::data::FarmDB;
+use crate::api::Result as ApiResult;
 use crate::data::farm::{Farm, FullFarm, NewFarm};
 use crate::data::location::NewGeoLocation;
 use crate::data::user::User;
+use crate::data::FarmDB;
 use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde::{Deserialize, Serialize};
 
 pub fn routes() -> Vec<rocket::Route> {
-    rocket::routes![list_farms, get_farms_near, get_full_farm, create_farm]
+    rocket::routes![list_farms, get_farms_near, get_full_farm, create_farm, get_owned]
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 struct ApiFarm {
     name: String,
 }
@@ -23,7 +23,7 @@ impl From<Farm> for ApiFarm {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 struct NewApiFarm {
     name: String,
     lat: f32,
@@ -54,7 +54,7 @@ async fn get_full_farm(db: FarmDB, farm_id: i32) -> ApiResult<Json<Option<FullFa
     Ok(Json(full_farm))
 }
 
-#[post("/create", data = "<farm>")]
+#[post("/", data = "<farm>")]
 async fn create_farm(db: FarmDB, user: User, farm: Json<NewApiFarm>) -> ApiResult<Json<ApiFarm>> {
     if user.farmowner == 0 {
         return Err(ApiError::MissingPrivilege(String::from(
@@ -71,36 +71,80 @@ async fn create_farm(db: FarmDB, user: User, farm: Json<NewApiFarm>) -> ApiResul
     Ok(Json(new_farm.into()))
 }
 
+#[get("/owned")]
+async fn get_owned(db: FarmDB, user: User) -> ApiResult<Json<Vec<ApiFarm>>> {
+    Ok(Json(vec![]))
+}
+
 #[cfg(test)]
 mod tests {
-    use diesel::{ExpressionMethods, RunQueryDsl};
+    use crate::api::v1::test_utils::{create_test_user, create_untracked_client, get_newest_farm, login_user};
     use crate::data::FarmDB;
-    use crate::data::user::{NewUser, create_user};
-    use crate::api::v1::test_utils::create_untracked_client;
+    use diesel::{ExpressionMethods, RunQueryDsl};
+    use rocket::http::{Header, Status};
+    use crate::api::v1::farms::{ApiFarm, NewApiFarm};
+    use crate::data::user::make_farmowner;
 
     #[tokio::test]
     async fn farm_api_crud() {
         let client = create_untracked_client().await;
+        let password = "Abc123!.";
 
-        let user = NewUser {
-            firstname: "farm_api_crud".to_string(),
-            lastname: "farm_api_crud".to_string(),
-            username: "farm_api_crud".to_string(),
-            email: "farm_api_crud@test.com".to_string(),
-        };
+        let user = create_test_user(&client, "farm_api_crud", &password).await;
         let db = FarmDB::get_one(client.rocket())
             .await
             .expect("failed to get db");
-        let user = create_user(&db, user, "Abc123!.".to_string())
-            .await
-            .expect("failed to create user");
-
         let user_id = user.id;
+        make_farmowner(&db, user_id).await.expect("failed to make user a farm owner");
+        let token = login_user(&client, &user.username, &password).await;
+
+        let new_farm = NewApiFarm {
+            name: "F farm_api_crud".to_string(),
+            lat: 1.5,
+            lon: 3.0,
+        };
+
+        // create
+        let req = client.post("/api/v1/farms");
+        let response = req.body(
+            serde_json::to_string(&new_farm).expect("failed to serialize new farm"),
+        )
+            .header(Header::new("Authorization", token.clone()))
+            .dispatch().await;
+        assert_eq!(response.status(), Status::Ok);
+        let farm = response.into_string().await.expect("expected response");
+        let farm: ApiFarm = serde_json::from_str(farm.as_str()).expect("expected valid farm");
+        assert_eq!("F farm_api_crud", farm.name);
+        let farm = get_newest_farm(&client).await;
+
+        // read
+        let req = client.get(format!("/api/v1/farms/{}", farm.id));
+        let response = req
+            .header(Header::new("Authorization", token)).dispatch().await;
+        let api_farm = response.into_json::<ApiFarm>().await.expect("failed to deserialize api farm");
+        assert_eq!("F farm_api_crud", api_farm.name);
+
+        // read owned
+
+
+        // update
+
+        // delete
+
         db.run(move |conn| {
+            diesel::delete(crate::schema::farm_admins::table)
+                .filter(crate::schema::farm_admins::user_id.eq(user_id))
+                .execute(conn)
+                .expect("Failed to delete farm admin");
+            diesel::delete(crate::schema::farms::table)
+                .filter(crate::schema::farms::id.eq(farm.id))
+                .execute(conn)
+                .expect("failed to delete farm");
             diesel::delete(crate::schema::users::table)
                 .filter(crate::schema::users::id.eq(user_id))
                 .execute(conn)
                 .expect("Cannot delete user");
-        }).await;
+        })
+        .await;
     }
 }
