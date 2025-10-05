@@ -1,13 +1,14 @@
 import {Component} from '@angular/core';
 import {Router, RouterLink, RouterOutlet} from '@angular/router';
-import {ApiService} from "./api/api.service";
 import {AuthService} from "./auth.service";
 import {NgIf} from "@angular/common";
+import {FarmService} from "./api/farm.service";
+import {UserService} from "./api/user.service";
 
 @Component({
     selector: 'app-root',
     imports: [RouterOutlet, RouterLink, NgIf],
-    providers: [ApiService],
+    providers: [FarmService, UserService],
     templateUrl: './app.component.html',
     styleUrl: './app.component.css'
 })

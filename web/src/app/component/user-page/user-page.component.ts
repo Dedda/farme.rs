@@ -2,7 +2,7 @@ import {Component, OnInit} from '@angular/core';
 import {AuthService} from "../../auth.service";
 import {Router, RouterLink} from "@angular/router";
 import {User} from "../../api/models";
-import {ApiService} from "../../api/api.service";
+import {UserService} from "../../api/user.service";
 
 @Component({
     selector: 'app-user-page',
@@ -19,14 +19,14 @@ export class UserPageComponent implements OnInit {
     constructor(
         private authService: AuthService,
         private router: Router,
-        private apiService: ApiService) {
+        private userService: UserService) {
     }
 
     ngOnInit(): void {
         if (!this.authService.isLoggedIn()) {
-            this.router.navigate(['/login']);
+            void this.router.navigate(['/login']);
         } else {
-            this.apiService.getCurrentUser().subscribe(user => {
+            this.userService.getCurrentUser().subscribe(user => {
                 console.log(user);
                 this.user = user;
             });

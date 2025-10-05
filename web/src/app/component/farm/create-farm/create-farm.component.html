@@ -1,0 +1,11 @@
+<div class="container">
+    <h1>Create Farm</h1>
+
+    <form (ngSubmit)="createAction()">
+        <div>
+            <button
+            [disabled]="submitting || !validate()"
+            type="submit">Create</button>
+        </div>
+    </form>
+</div>

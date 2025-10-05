@@ -38,3 +38,11 @@ export class User {
         public email: string,
     ) {}
 }
+
+export class NewFarm {
+    constructor(
+        public name: string,
+        public lat: number,
+        public lon: number,
+    ) {}
+}

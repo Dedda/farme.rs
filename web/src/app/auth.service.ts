@@ -4,25 +4,23 @@ import {NewUser, User} from "./api/models";
 import {Observable} from "rxjs";
 import {map} from "rxjs/operators";
 import {getLoginToken} from "./auth.interceptor";
+import {Api} from "./api/api";
 
 @Injectable({
   providedIn: 'root'
 })
 export class AuthService {
 
-    private baseUrl = 'http://localhost:8000';
-    private apiBaseUrl = this.baseUrl + '/api/v1';
-
     constructor(
       private http: HttpClient,
     ) { }
 
     public register(user: NewUser): Observable<User> {
-        return this.http.post<User>(this.apiBaseUrl + '/users/create', user);
+        return this.http.post<User>(Api.API_BASE_URL + '/users/create', user);
     }
 
     public login(credentials: LoginCredentials): Observable<boolean> {
-        return this.http.post(this.apiBaseUrl + '/ident/login-jwt', credentials, {responseType: "text"}).pipe(map(res => {
+        return this.http.post(Api.API_BASE_URL + '/ident/login-jwt', credentials, {responseType: "text"}).pipe(map(res => {
             this.setSession(res);
             return true;
         }));
