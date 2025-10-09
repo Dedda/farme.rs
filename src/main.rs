@@ -3,13 +3,14 @@ pub mod schema;
 mod api;
 mod validation;
 
-use dotenv::dotenv;
+use api::v1::ident;
 use api::v1::ident::JwtRefreshFairing;
+use dotenv::dotenv;
+use rocket::fs::FileServer;
 use rocket::http::Method;
 use rocket::{launch, routes, Build, Rocket};
-use rocket::fs::{relative, FileServer};
 use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions};
-use api::v1::ident;
+use std::env;
 
 #[launch]
 fn rocket() -> Rocket<Build> {
@@ -19,7 +20,7 @@ fn rocket() -> Rocket<Build> {
         .attach(make_cors())
         .attach(JwtRefreshFairing);
     api::v1::mount(r)
-        .mount("/", ng_app())
+        .mount("/", webapp())
         .mount("/", routes![ident::login_jwt])
 }
 fn make_cors() -> Cors {
@@ -36,6 +37,14 @@ fn make_cors() -> Cors {
         .to_cors().unwrap()
 }
 
-fn ng_app() -> FileServer {
-    FileServer::from(relative!("web/dist/farmers/browser"))
+fn webapp() -> FileServer {
+    let webapp_path = if let Ok(path) = env::var("WEBAPP_PATH") {
+        println!("WEBAPP_PATH set. Using webapp path: {}", &path);
+        path
+    } else {
+        let default_path = "web/dist/farmers/browser";
+        println!("WEBAPP_PATH not set. Using default webapp path: {}", &default_path);
+        default_path.to_string()
+    };
+    FileServer::from(webapp_path)
 }
