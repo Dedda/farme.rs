@@ -7,6 +7,7 @@ use dotenv::dotenv;
 use api::v1::ident::JwtRefreshFairing;
 use rocket::http::Method;
 use rocket::{launch, routes, Build, Rocket};
+use rocket::fs::{relative, FileServer};
 use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions};
 use api::v1::ident;
 
@@ -18,9 +19,9 @@ fn rocket() -> Rocket<Build> {
         .attach(make_cors())
         .attach(JwtRefreshFairing);
     api::v1::mount(r)
+        .mount("/", ng_app())
         .mount("/", routes![ident::login_jwt])
 }
-
 fn make_cors() -> Cors {
     CorsOptions::default()
         .allowed_origins(AllowedOrigins::all())
@@ -33,5 +34,8 @@ fn make_cors() -> Cors {
                 .collect()
         ).allow_credentials(true)
         .to_cors().unwrap()
+}
 
+fn ng_app() -> FileServer {
+    FileServer::from(relative!("web/dist/farmers/browser"))
 }
