@@ -3,6 +3,41 @@
 
     <form (ngSubmit)="createAction()">
         <div>
+            <label for="farmname">Farm name</label>
+            <input
+            type="text"
+            id="farmname"
+            name="farmname"
+            required
+            [(ngModel)]="farmname"/>
+        </div>
+        <div>
+            <label for="location_override">Add location?</label>
+            <input
+                type="checkbox"
+                id="location_override"
+                name="location_override"
+                [(ngModel)]="location_override"/>
+        </div>
+        <div
+            [hidden]="!location_override">
+            <label for="lat">Latitude</label>
+            <input
+                type="number"
+                id="lat"
+                name="lat"
+                [(ngModel)]="lat"/>
+        </div>
+        <div
+            [hidden]="!location_override">
+            <label for="lon">Longitude</label>
+            <input
+                type="number"
+                id="lon"
+                name="lon"
+                [(ngModel)]="lon"/>
+        </div>
+        <div>
             <button
             [disabled]="submitting || !validate()"
             type="submit">Create</button>

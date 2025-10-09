@@ -36,6 +36,7 @@ export class User {
         public lastname: string,
         public username: string,
         public email: string,
+        public farmowner: boolean = false,
     ) {}
 }
 

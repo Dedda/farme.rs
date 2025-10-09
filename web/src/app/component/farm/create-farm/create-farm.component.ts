@@ -14,14 +14,17 @@ import {NewFarm} from "../../../api/models";
 })
 export class CreateFarmComponent {
 
-  name: string = '';
+  farmname: string = '';
+  location_override: boolean = false;
+  lat: number = 0;
+  lon: number = 0;
 
   submitting: boolean = false;
 
   constructor(private farmService: FarmService, private router: Router) {}
 
   validate(): boolean {
-    return this.name.trim().length > 2;
+    return this.farmname.trim().length > 2;
   }
 
   createAction() {
@@ -30,10 +33,14 @@ export class CreateFarmComponent {
       this.submitting = false;
       return;
     }
-    let newFarm = new NewFarm(this.name, 0.0, 0.0);
+    let newFarm = new NewFarm(this.farmname, 0.0, 0.0);
+    if (this.location_override) {
+      newFarm.lat = this.lat;
+      newFarm.lon = this.lon;
+    }
     this.farmService.create(newFarm).subscribe(res => {
       console.log('Farm created: ', res);
-      this.router.navigate(['/farms/' + res.id]).then(_ => {});
+      this.router.navigate(['/farms', '' + res.id]).then(_ => {});
       this.submitting = false;
     });
   }
