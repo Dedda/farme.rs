@@ -112,6 +112,7 @@ struct ApiUser {
     pub lastname: String,
     pub username: String,
     pub email: String,
+    pub farmowner: i32,
 }
 
 impl From<User> for ApiUser {
@@ -122,6 +123,7 @@ impl From<User> for ApiUser {
             lastname: u.lastname,
             username: u.username,
             email: u.email,
+            farmowner: u.farmowner,
         }
     }
 }

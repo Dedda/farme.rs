@@ -91,13 +91,13 @@ pub struct NewFarmAdmin {
     pub farm_id: i32,
 }
 
-pub async fn list_farms(db: FarmDB) -> QueryResult<Vec<Farm>> {
+pub async fn list_farms(db: &FarmDB) -> QueryResult<Vec<Farm>> {
     db.run(move |conn| {
         farms::table.select(Farm::as_select()).load(conn)
     }).await
 }
 
-pub async fn get_farms_near(db: FarmDB, lat: f32, lon: f32, radius: f32) -> QueryResult<Vec<Farm>> {
+pub async fn get_farms_near(db: &FarmDB, lat: f32, lon: f32, radius: f32) -> QueryResult<Vec<Farm>> {
     db.run(move |conn| {
         let f = farms::table
             .inner_join(farm_locations::table)
@@ -110,8 +110,18 @@ pub async fn get_farms_near(db: FarmDB, lat: f32, lon: f32, radius: f32) -> Quer
     }).await
 }
 
+pub async fn get_farms_owned_by(db: &FarmDB, user: &User) -> QueryResult<Vec<Farm>> {
+    let user_id = user.id;
+    db.run(move |conn| {
+        let f = farms::table
+            .inner_join(farm_admins::table.on(farm_admins::user_id.eq(user_id)))
+            .select(Farm::as_select())
+            .load::<Farm>(conn)?;
+        Ok(f)
+    }).await
+}
 
-pub async fn load_full_farm(db: FarmDB, farm_id: i32) -> QueryResult<Option<FullFarm>> {
+pub async fn load_full_farm(db: &FarmDB, farm_id: i32) -> QueryResult<Option<FullFarm>> {
     db.run(move |conn| {
         farms::table
             .select(Farm::as_select())

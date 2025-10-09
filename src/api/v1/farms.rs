@@ -1,6 +1,6 @@
 use crate::api::v1::error::ApiError;
 use crate::api::Result as ApiResult;
-use crate::data::farm::{Farm, FullFarm, NewFarm};
+use crate::data::farm::{get_farms_owned_by, Farm, FullFarm, NewFarm};
 use crate::data::location::NewGeoLocation;
 use crate::data::user::User;
 use crate::data::FarmDB;
@@ -14,12 +14,16 @@ pub fn routes() -> Vec<rocket::Route> {
 
 #[derive(Serialize, Deserialize)]
 struct ApiFarm {
+    id: i32,
     name: String,
 }
 
 impl From<Farm> for ApiFarm {
     fn from(value: Farm) -> Self {
-        Self { name: value.name }
+        Self {
+            id: value.id,
+            name: value.name,
+        }
     }
 }
 
@@ -37,20 +41,20 @@ impl From<NewApiFarm> for NewFarm {
 }
 
 #[get("/")]
-async fn list_farms(db: FarmDB) -> ApiResult<Json<Vec<Farm>>> {
-    let farms = crate::data::farm::list_farms(db).await?;
-    Ok(Json(farms))
+async fn list_farms(db: FarmDB) -> ApiResult<Json<Vec<ApiFarm>>> {
+    let farms = crate::data::farm::list_farms(&db).await?;
+    Ok(Json(farms.into_iter().map(ApiFarm::from).collect()))
 }
 
 #[get("/find_near?<lat>&<lon>&<radius>")]
-async fn get_farms_near(db: FarmDB, lat: f32, lon: f32, radius: f32) -> ApiResult<Json<Vec<Farm>>> {
-    let farms = crate::data::farm::get_farms_near(db, lat, lon, radius).await?;
-    Ok(Json(farms))
+async fn get_farms_near(db: FarmDB, lat: f32, lon: f32, radius: f32) -> ApiResult<Json<Vec<ApiFarm>>> {
+    let farms = crate::data::farm::get_farms_near(&db, lat, lon, radius).await?;
+    Ok(Json(farms.into_iter().map(ApiFarm::from).collect()))
 }
 
 #[get("/<farm_id>")]
 async fn get_full_farm(db: FarmDB, farm_id: i32) -> ApiResult<Json<Option<FullFarm>>> {
-    let full_farm = crate::data::farm::load_full_farm(db, farm_id).await?;
+    let full_farm = crate::data::farm::load_full_farm(&db, farm_id).await?;
     Ok(Json(full_farm))
 }
 
@@ -73,7 +77,8 @@ async fn create_farm(db: FarmDB, user: User, farm: Json<NewApiFarm>) -> ApiResul
 
 #[get("/owned")]
 async fn get_owned(db: FarmDB, user: User) -> ApiResult<Json<Vec<ApiFarm>>> {
-    Ok(Json(vec![]))
+    let farms = get_farms_owned_by(&db, &user).await?;
+    Ok(Json(farms.into_iter().map(ApiFarm::from).collect()))
 }
 
 #[cfg(test)]
@@ -120,12 +125,16 @@ mod tests {
         // read
         let req = client.get(format!("/api/v1/farms/{}", farm.id));
         let response = req
-            .header(Header::new("Authorization", token)).dispatch().await;
+            .header(Header::new("Authorization", token.clone())).dispatch().await;
         let api_farm = response.into_json::<ApiFarm>().await.expect("failed to deserialize api farm");
         assert_eq!("F farm_api_crud", api_farm.name);
 
-        // read owned
-
+        // read owned list
+        let req = client.get("/api/v1/farms/owned");
+        let response = req
+            .header(Header::new("Authorization", token)).dispatch().await;
+        let api_farms = response.into_json::<Vec<ApiFarm>>().await.expect("failed to deserialize owned farms list");
+        assert_eq!(1, api_farms.len());
 
         // update
 
