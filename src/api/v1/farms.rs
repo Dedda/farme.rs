@@ -1,15 +1,23 @@
-use crate::api::v1::error::ApiError;
+use crate::api::v1::error::{ApiError, ValidationError as ValidationApiError};
 use crate::api::Result as ApiResult;
 use crate::data::farm::{get_farms_owned_by, Farm, FullFarm, NewFarm};
 use crate::data::location::NewGeoLocation;
 use crate::data::user::User;
 use crate::data::FarmDB;
+use crate::validation::{StringLengthCriteria, StringValidator, Validator};
 use rocket::serde::json::Json;
 use rocket::{get, post};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 pub fn routes() -> Vec<rocket::Route> {
-    rocket::routes![list_farms, get_farms_near, get_full_farm, create_farm, get_owned]
+    rocket::routes![
+        list_farms,
+        get_farms_near,
+        get_full_farm,
+        create_farm,
+        get_owned
+    ]
 }
 
 #[derive(Serialize, Deserialize)]
@@ -40,6 +48,35 @@ impl From<NewApiFarm> for NewFarm {
     }
 }
 
+impl NewApiFarm {
+    fn validate(&self) -> Result<(), ValidationApiError> {
+        let mut errors = HashMap::new();
+        if let Some(err) = self.validate_name() {
+            errors.insert("name".to_string(), err);
+        }
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(crate::api::v1::error::ValidationError::for_fields(errors))
+        }
+    }
+
+    fn validate_name(&self) -> Option<Vec<String>> {
+        let mut validator = StringValidator::new();
+        validator.add_criteria(StringLengthCriteria::min(3));
+        if let Err(err) = validator.validate(&self.name) {
+            return Some(err.messages);
+        }
+        if self.name.chars().any(|c| !c.is_alphanumeric() && !  " -._".contains(c)) {
+            return Some(vec!["Only letters, numbers and characters `-._` allowed".to_string()]);
+        }
+        if !self.name.chars().next().unwrap().is_alphabetic() {
+            return Some(vec!["Has to begin with a letter".to_string()]);
+        }
+        None
+    }
+}
+
 #[get("/")]
 async fn list_farms(db: FarmDB) -> ApiResult<Json<Vec<ApiFarm>>> {
     let farms = crate::data::farm::list_farms(&db).await?;
@@ -47,7 +84,12 @@ async fn list_farms(db: FarmDB) -> ApiResult<Json<Vec<ApiFarm>>> {
 }
 
 #[get("/find_near?<lat>&<lon>&<radius>")]
-async fn get_farms_near(db: FarmDB, lat: f32, lon: f32, radius: f32) -> ApiResult<Json<Vec<ApiFarm>>> {
+async fn get_farms_near(
+    db: FarmDB,
+    lat: f32,
+    lon: f32,
+    radius: f32,
+) -> ApiResult<Json<Vec<ApiFarm>>> {
     let farms = crate::data::farm::get_farms_near(&db, lat, lon, radius).await?;
     Ok(Json(farms.into_iter().map(ApiFarm::from).collect()))
 }
@@ -60,15 +102,12 @@ async fn get_full_farm(db: FarmDB, farm_id: i32) -> ApiResult<Json<Option<FullFa
 
 #[post("/", data = "<farm>")]
 async fn create_farm(db: FarmDB, user: User, farm: Json<NewApiFarm>) -> ApiResult<Json<ApiFarm>> {
-    if user.farmowner == 0 {
-        return Err(ApiError::MissingPrivilege(String::from(
-            "user must have `farmowner` privilege",
-        )));
-    }
+    require_farmowner(&user)?;
     let new_location = NewGeoLocation {
         lat: farm.lat,
         lon: farm.lon,
     };
+    farm.0.validate()?;
     let new_farm: NewFarm = farm.0.into();
     let new_farm = crate::data::farm::create_farm(&db, &user, new_farm).await?;
     crate::data::location::add_new_location_to_farm(&db, new_location, new_farm.id).await?;
@@ -81,14 +120,26 @@ async fn get_owned(db: FarmDB, user: User) -> ApiResult<Json<Vec<ApiFarm>>> {
     Ok(Json(farms.into_iter().map(ApiFarm::from).collect()))
 }
 
+fn require_farmowner(user: &User) -> ApiResult<()> {
+    if user.farmowner == 0 {
+        Err(ApiError::missing_privilege(
+            "user must have `farmowner` privilege",
+        ))
+    } else {
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::api::v1::test_utils::{create_test_user, create_untracked_client, get_newest_farm, login_user};
+    use crate::api::v1::farms::{ApiFarm, NewApiFarm};
+    use crate::api::v1::test_utils::{
+        create_test_user, create_untracked_client, get_newest_farm, login_user,
+    };
+    use crate::data::user::make_farmowner;
     use crate::data::FarmDB;
     use diesel::{ExpressionMethods, RunQueryDsl};
     use rocket::http::{Header, Status};
-    use crate::api::v1::farms::{ApiFarm, NewApiFarm};
-    use crate::data::user::make_farmowner;
 
     #[tokio::test]
     async fn farm_api_crud() {
@@ -100,7 +151,9 @@ mod tests {
             .await
             .expect("failed to get db");
         let user_id = user.id;
-        make_farmowner(&db, user_id).await.expect("failed to make user a farm owner");
+        make_farmowner(&db, user_id)
+            .await
+            .expect("failed to make user a farm owner");
         let token = login_user(&client, &user.username, &password).await;
 
         let new_farm = NewApiFarm {
@@ -111,11 +164,11 @@ mod tests {
 
         // create
         let req = client.post("/api/v1/farms");
-        let response = req.body(
-            serde_json::to_string(&new_farm).expect("failed to serialize new farm"),
-        )
+        let response = req
+            .body(serde_json::to_string(&new_farm).expect("failed to serialize new farm"))
             .header(Header::new("Authorization", token.clone()))
-            .dispatch().await;
+            .dispatch()
+            .await;
         assert_eq!(response.status(), Status::Ok);
         let farm = response.into_string().await.expect("expected response");
         let farm: ApiFarm = serde_json::from_str(farm.as_str()).expect("expected valid farm");
@@ -125,15 +178,25 @@ mod tests {
         // read
         let req = client.get(format!("/api/v1/farms/{}", farm.id));
         let response = req
-            .header(Header::new("Authorization", token.clone())).dispatch().await;
-        let api_farm = response.into_json::<ApiFarm>().await.expect("failed to deserialize api farm");
+            .header(Header::new("Authorization", token.clone()))
+            .dispatch()
+            .await;
+        let api_farm = response
+            .into_json::<ApiFarm>()
+            .await
+            .expect("failed to deserialize api farm");
         assert_eq!("F farm_api_crud", api_farm.name);
 
         // read owned list
         let req = client.get("/api/v1/farms/owned");
         let response = req
-            .header(Header::new("Authorization", token)).dispatch().await;
-        let api_farms = response.into_json::<Vec<ApiFarm>>().await.expect("failed to deserialize owned farms list");
+            .header(Header::new("Authorization", token))
+            .dispatch()
+            .await;
+        let api_farms = response
+            .into_json::<Vec<ApiFarm>>()
+            .await
+            .expect("failed to deserialize owned farms list");
         assert_eq!(1, api_farms.len());
 
         // update

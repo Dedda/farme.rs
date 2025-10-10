@@ -14,6 +14,8 @@ use serde::{Deserialize, Serialize};
 
 #[cfg(not(test))]
 use std::env;
+use crate::api::v1::error::ApiError::WrongCredentials;
+
 #[cfg(not(test))]
 lazy_static! {
     static ref JWT_SECRET: String = env::var("JWT_SECRET").expect("JWT_SECRET must be set.");
@@ -70,10 +72,10 @@ pub async fn login_jwt(
     let username = if let Some(name) = username_by_identity(&db, identity).await.ok().flatten() {
         name
     } else {
-        return Ok(None);
+        return Err(WrongCredentials);
     };
     if !check_login(&db, username.clone(), credentials.0.password).await? {
-        return Ok(None);
+        return Err(WrongCredentials);
     };
 
     if let Ok(token) = create_jwt(username) {
