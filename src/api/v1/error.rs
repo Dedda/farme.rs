@@ -5,7 +5,6 @@ use rocket::{Request, Response};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::io::Cursor;
-use crate::api::v1::error::ApiError::MissingPrivilege;
 
 #[derive(From)]
 pub enum ApiError {
@@ -14,12 +13,6 @@ pub enum ApiError {
     Validation(ValidationError),
     #[from(ignore)]
     MissingPrivilege(String),
-}
-
-impl ApiError {
-    pub fn missing_privilege<T>(msg: T) -> Self where T: ToString {
-        MissingPrivilege(msg.to_string())
-    }
 }
 
 impl<'r> Responder<'r, 'static> for ApiError {

@@ -107,6 +107,22 @@ impl<'r> FromRequest<'r> for User {
     }
 }
 
+pub struct FarmOwner(pub User);
+
+#[async_trait]
+impl<'r> FromRequest<'r> for FarmOwner {
+    type Error = ();
+
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let user = try_outcome!(request.guard::<User>().await);
+        if user.farmowner != 0 {
+            Outcome::Success(FarmOwner(user))
+        } else {
+            Outcome::Forward(Status::Forbidden)
+        }
+    }
+}
+
 fn username_from_valid_jwt_token(jwt_token: &str) -> Option<String> {
     let decoding_key = DecodingKey::from_secret(JWT_SECRET.as_bytes());
     let validation = Validation::new(Algorithm::HS512);
