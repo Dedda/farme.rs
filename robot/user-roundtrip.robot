@@ -36,11 +36,31 @@ Change Email
     Click Element                           class:updatebtn
     Wait Until Element Is Visible           xpath=//p[text() = "Email: robot2@test.com"]
 
+Change Password
+    Click Element                           xpath=//a[text() = "Change password"]
+    Wait Until Element Is Visible           xpath=//h1[text() = "Change password"]
+    Input Password  id:old_password         Test!user1
+    Input Password  id:new_password         Test!user2
+    Click Element                           class:changebtn
+    Wait Until Element Is Visible           xpath=//p[text() = "Email: robot2@test.com"]
+
 Show Farms
     keywords.Navigate To Farm List
     Wait Until Element Is Visible           xpath=//h1[contains(text(), "farm-list")]
 
 Logout Created User
+    Wait Until Element Is Visible           xpath=//a[text() = "Logout"]
+    Click Element                           xpath=//a[text() = "Logout"]
+    Wait Until Element Is Visible           xpath=//a[text() = "Login"]
+
+Check New Password And Email
+    keywords.Navigate To Login Page
+    Input Text      id:identity             robot2@test.com
+    Input Password  id:password             Test!user2
+    Click Element   class:loginbtn
+    Wait Until Element Is Visible           xpath=//a[text() = "Logout"]
+
+Logout Changed User
     Wait Until Element Is Visible           xpath=//a[text() = "Logout"]
     Click Element                           xpath=//a[text() = "Logout"]
     Wait Until Element Is Visible           xpath=//a[text() = "Login"]
