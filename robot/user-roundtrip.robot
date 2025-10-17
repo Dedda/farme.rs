@@ -64,6 +64,7 @@ Delete Changed User
     Wait Until Element Is Visible           xpath=//a[text() = "Profile"]
     Click Element                           xpath=//a[text() = "Profile"]
     Wait Until Element Is Visible           xpath=//button[text() = "Delete Account"]
+    Input Password  id:password             Test!user2
     Click Element                           xpath=//button[text() = "Delete Account"]
     Wait Until Element Is Visible           xpath=//a[text() = "Login"]
     Close Browser

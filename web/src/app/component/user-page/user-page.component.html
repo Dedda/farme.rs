@@ -8,6 +8,15 @@
     <a [routerLink]="['/user', 'pwchange']">Change password</a>
 </div>
 <div>
+    <div>
+        <label for="password">password</label>
+        <input
+                type="password"
+                id="password"
+                name="password"
+                required
+                [(ngModel)]="password"/>
+    </div>
     <button
             class="deletebtn"
             [disabled]="submitting"
