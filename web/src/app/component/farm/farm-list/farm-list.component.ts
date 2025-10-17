@@ -1,5 +1,5 @@
 import {Component, OnInit} from '@angular/core';
-import {Farm, User} from '../../../api/models';
+import {Farm, FarmOwnerStatus, User} from '../../../api/models';
 import {Router, RouterLink} from '@angular/router';
 import {FarmService} from "../../../api/farm.service";
 import {UserService} from "../../../api/user.service";
@@ -31,4 +31,6 @@ export class FarmListComponent implements OnInit {
       this.farms = farms;
     })
   }
+
+  protected readonly FarmOwnerStatus = FarmOwnerStatus;
 }

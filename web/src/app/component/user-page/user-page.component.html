@@ -2,10 +2,20 @@
     <h1>{{ user.firstname }} {{ user.lastname }}</h1>
     <p>Username: {{ user.username }}</p>
     <p>Email: {{ user.email }}</p>
+    @if (user.farmowner === FarmOwnerStatus.YES) {
+        <p>Farm Admin</p>
+    }
 </div>
 <div>
     <a [routerLink]="['/user', 'change']">Update</a>
     <a [routerLink]="['/user', 'pwchange']">Change password</a>
+</div>
+<div>
+    <button
+            class="request-adm-btn"
+            [disabled]="user.farmowner !== FarmOwnerStatus.NO"
+            type="button"
+            (click)="request_admin_action()">Request Farm Admin Status</button>
 </div>
 <div>
     <div>

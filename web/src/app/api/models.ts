@@ -30,13 +30,19 @@ export class NewUser {
     ) {}
 }
 
+export enum FarmOwnerStatus {
+    YES = 'YES',
+    NO = 'NO',
+    REQUESTED = 'REQUESTED',
+}
+
 export class User {
     constructor(
         public firstname: string,
         public lastname: string,
         public username: string,
         public email: string,
-        public farmowner: boolean = false,
+        public farmowner: FarmOwnerStatus = FarmOwnerStatus.NO,
     ) {}
 }
 

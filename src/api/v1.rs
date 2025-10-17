@@ -19,8 +19,9 @@ pub mod test_utils {
     use crate::data::user::{create_user, NewUser, User};
     use crate::data::FarmDB;
     use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
-    use rocket::http::{ContentType, Status};
+    use rocket::http::{ContentType, Header, Status};
     use rocket::local::asynchronous::Client;
+    use crate::api::v1::users::ApiUser;
 
     pub async fn create_untracked_client() -> Client {
         let rocket = crate::rocket()
@@ -84,5 +85,16 @@ pub mod test_utils {
                 .first::<Farm>(conn)
                 .expect("failed to get farm")
         }).await
+    }
+
+    pub async fn get_current_user(client: &Client, token: String) -> ApiUser {
+        let response = client
+            .get("/api/v1/users/current-user")
+            .header(Header::new("Authorization", token))
+            .dispatch()
+            .await;
+        assert_eq!(response.status(), Status::Ok);
+        let user = response.into_json::<ApiUser>().await.expect("failed to deserialize user");
+        user
     }
 }

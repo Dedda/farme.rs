@@ -1,7 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {AuthService} from "../../auth.service";
 import {Router, RouterLink} from "@angular/router";
-import {User} from "../../api/models";
+import {FarmOwnerStatus, User} from "../../api/models";
 import {UserService} from "../../api/user.service";
 import {FormsModule, ReactiveFormsModule} from "@angular/forms";
 
@@ -38,6 +38,19 @@ export class UserPageComponent implements OnInit {
         }
     }
 
+    request_admin_action(): void {
+        this.userService.requestAdmin().subscribe({
+            next: res => {
+                if (res) {
+                    this.userService.getCurrentUser().subscribe(user => {
+                        this.user = user;
+                        console.log(user);
+                    })
+                }
+            }
+        })
+    }
+
     validate(): boolean {
         return this.password.length >= 8 && this.password.length >= 8;
     }
@@ -61,4 +74,6 @@ export class UserPageComponent implements OnInit {
             }
         });
     }
+
+    protected readonly FarmOwnerStatus = FarmOwnerStatus;
 }

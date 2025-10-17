@@ -1,7 +1,7 @@
 <main class="main">
   <div class="content">
       <a
-          [hidden]="user === null || !user.farmowner"
+          [hidden]="user === null || user.farmowner !== FarmOwnerStatus.YES"
           [routerLink]="['/farms/create']">Create farm</a>
     <div class="left-side">
       <h1>farm-list works!</h1>
