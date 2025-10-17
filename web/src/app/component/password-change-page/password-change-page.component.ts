@@ -1,8 +1,8 @@
 import {Component, OnInit} from '@angular/core';
 import {Router} from "@angular/router";
-import {ApiService, PasswordChangeRequest} from "../../api/api.service";
 import {AuthService} from "../../auth.service";
 import {FormsModule, ReactiveFormsModule} from "@angular/forms";
+import {PasswordChangeRequest, UserService} from "../../api/user.service";
 
 @Component({
     selector: 'app-password-change-page',
@@ -19,7 +19,7 @@ export class PasswordChangePageComponent implements OnInit {
 
     submitting = false;
 
-    constructor(private authService: AuthService, private apiService: ApiService, private router: Router) {
+    constructor(private authService: AuthService, private userService: UserService, private router: Router) {
     }
 
     ngOnInit(): void {
@@ -38,7 +38,7 @@ export class PasswordChangePageComponent implements OnInit {
             this.submitting = false;
             return;
         }
-        this.apiService.changePassword(this.change).subscribe(_res => {
+        this.userService.changePassword(this.change).subscribe(_res => {
             this.submitting = false;
             this.router.navigate(['/user']);
         })

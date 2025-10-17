@@ -1,10 +1,13 @@
 <main class="main">
   <div class="content">
+      <a
+          [hidden]="user === null || !user.farmowner"
+          [routerLink]="['/farms/create']">Create farm</a>
     <div class="left-side">
       <h1>farm-list works!</h1>
       <ul>
         @for (farm of farms; track farm.id) {
-          <li><a routerLink="farms/{{farm.id}}">{{ farm.name }}</a></li>
+          <li><a routerLink="/farms/{{farm.id}}">{{ farm.name }}</a></li>
         }
       </ul>
     </div>

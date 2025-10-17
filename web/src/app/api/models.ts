@@ -36,5 +36,14 @@ export class User {
         public lastname: string,
         public username: string,
         public email: string,
+        public farmowner: boolean = false,
+    ) {}
+}
+
+export class NewFarm {
+    constructor(
+        public name: string,
+        public lat: number,
+        public lon: number,
     ) {}
 }

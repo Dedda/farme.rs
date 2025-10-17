@@ -2,8 +2,8 @@
 
 diesel::table! {
     contact (id) {
-        id -> Integer,
-        farm_id -> Integer,
+        id -> Int4,
+        farm_id -> Int4,
         email -> Nullable<Text>,
         phone -> Nullable<Text>,
         address -> Nullable<Text>,
@@ -12,31 +12,31 @@ diesel::table! {
 
 diesel::table! {
     farm_admins (id) {
-        id -> Integer,
-        user_id -> Integer,
-        farm_id -> Integer,
+        id -> Int4,
+        user_id -> Int4,
+        farm_id -> Int4,
     }
 }
 
 diesel::table! {
     farm_locations (id) {
-        id -> Integer,
-        farm_id -> Integer,
-        location_id -> Integer,
+        id -> Int4,
+        farm_id -> Int4,
+        location_id -> Int4,
     }
 }
 
 diesel::table! {
     farm_shop_types (id) {
-        id -> Integer,
-        farm_id -> Integer,
-        shop_type_id -> Integer,
+        id -> Int4,
+        farm_id -> Int4,
+        shop_type_id -> Int4,
     }
 }
 
 diesel::table! {
     farms (id) {
-        id -> Integer,
+        id -> Int4,
         name -> Text,
         created -> Timestamp,
     }
@@ -44,17 +44,17 @@ diesel::table! {
 
 diesel::table! {
     geolocations (id) {
-        id -> Integer,
-        lat -> Float,
-        lon -> Float,
+        id -> Int4,
+        lat -> Float4,
+        lon -> Float4,
     }
 }
 
 diesel::table! {
     opening_hours (id) {
-        id -> Integer,
-        farm_id -> Integer,
-        weekday -> Integer,
+        id -> Int4,
+        farm_id -> Int4,
+        weekday -> Int4,
         open -> Time,
         close -> Time,
     }
@@ -62,20 +62,21 @@ diesel::table! {
 
 diesel::table! {
     shop_types (id) {
-        id -> Integer,
+        id -> Int4,
         name -> Text,
     }
 }
 
 diesel::table! {
     users (id) {
-        id -> Integer,
+        id -> Int4,
         firstname -> Text,
         lastname -> Text,
         username -> Text,
         email -> Text,
         password -> Text,
-        sysadmin -> Integer,
+        sysadmin -> Int4,
+        farmowner -> Int4,
     }
 }
 

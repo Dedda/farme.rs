@@ -4,6 +4,9 @@
 </style>
 
 <div class="header-line">
+    <div class="home-button-area">
+        <a routerLink="/">Farmers</a>
+    </div>
     <div class="login-area">
         <div *ngIf="isLoggedIn();then userarea else login"></div>
         <ng-template #login>

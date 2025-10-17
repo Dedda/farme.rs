@@ -1,9 +1,9 @@
 import {Component, OnInit} from '@angular/core';
-import {NewUser, User} from "../../api/models";
+import {NewUser} from "../../api/models";
 import {AuthService} from "../../auth.service";
-import {ApiService} from "../../api/api.service";
 import {Router} from "@angular/router";
 import {FormsModule, ReactiveFormsModule} from "@angular/forms";
+import {UserService} from "../../api/user.service";
 
 @Component({
   selector: 'app-user-change-page',
@@ -19,14 +19,14 @@ export class UserChangePageComponent implements OnInit {
     user: NewUser = new NewUser('', '', '', '', '');
     submitting: boolean = false;
 
-    constructor(private authService: AuthService, private apiService: ApiService, private router: Router) {
+    constructor(private authService: AuthService, private userService: UserService, private router: Router) {
     }
 
     ngOnInit(): void {
         if (!this.authService.isLoggedIn()) {
             this.router.navigate(['/login']);
         } else {
-            this.apiService.getCurrentUser().subscribe(user => {
+            this.userService.getCurrentUser().subscribe(user => {
                 console.log(user);
                 this.user = new NewUser(
                     user.firstname,
@@ -59,7 +59,7 @@ export class UserChangePageComponent implements OnInit {
             this.submitting = false;
             return;
         }
-        this.apiService.updateCurrentUser(this.user).subscribe(user => {
+        this.userService.updateCurrentUser(this.user).subscribe(user => {
             this.submitting = false;
             this.router.navigate(['/user']);
         })

@@ -1,11 +1,31 @@
 #!/usr/bin/env bash
 
+usage() {
+cat <<EOF
+Usage: $0 [options]
+
+-h              show this help and abort
+-e              Write database connection URL to .env file.
+-u <USERNAME>   Username for database user
+-p <PASSWORD>   Password for database user
+-H <HOST>       Hostname used in connection URL
+-d <DATABASE>   Name used for database
+-P <PORT>       Database port for container to publish to host
+-s <PATH>       Path to be mounted as volume for postgres data
+-n <NAME>       Name of container
+-D              Run container as daemon
+-t              Test mode. Delete container after stopping
+EOF
+}
+
 validate_min_length() {
-  _ARG=$1
-  _MIN_LENGTH=$2
-  _NAME=$3
-  if [ ${#_ARG} -lt "$_MIN_LENGTH" ]; then
-    echo "$_NAME must be at least $_MIN_LENGTH but was only ${#_ARG}"
+  local ARG=$1
+  local MIN_LENGTH=$2
+  local NAME=$3
+  if [ ${#ARG} -lt "$MIN_LENGTH" ]; then
+    echo "$NAME must be at least $MIN_LENGTH but was only ${#ARG}"
+    echo
+    usage
     exit 1
   fi
 }
@@ -18,19 +38,22 @@ PORT=5432
 STORAGE=
 NAME='pgfarm'
 DAEMON_FLAG=
+TEST_FLAG=
 
-while getopts eu:p:h:d:P:s:n:D FLAG
+while getopts eu:p:H:d:P:s:n:Dth FLAG
 do
   case "${FLAG}" in
     e) WRITE_ENV=1;;
     u) USERNAME=${OPTARG};;
     p) PASSWORD=${OPTARG};;
-    h) HOST=${OPTARG};;
+    H) HOST=${OPTARG};;
     d) DATABASE=${OPTARG};;
     P) PORT=${OPTARG};;
     s) STORAGE=${OPTARG};;
     n) NAME=${OPTARG};;
     D) DAEMON_FLAG='-d';;
+    t) TEST_FLAG='--rm';;
+    h) usage && exit 0;;
     *) ;;
   esac
 done
@@ -44,7 +67,10 @@ validate_min_length "$DATABASE" 3 'DATABASE (-d)'
 validate_min_length "$NAME" 2 'NAME (-n)'
 
 if ! [[ $PORT =~ ^[0-9]+$ ]]; then
-  echo 'port (-P) must be a number'; exit 1
+  echo 'port (-P) must be a number';
+  echo
+  usage
+  exit 1
 fi
 
 set +e
@@ -54,8 +80,7 @@ echo "database url is ${URL}"
 
 if [ -n "${WRITE_ENV}" ]; then
   echo 'updating env file...'
-  sed -i "s/ROCKET_DATABASES.*/ROCKET_DATABASES={pgfarm={url=\"${URL}\"}}/" .env
-#  echo "ROCKET_DATABASES={pgfarm={url=\"${URL}\"}}" > .env
+  sed  -i "s|^ROCKET_DATABASES.*$|ROCKET_DATABASES={pgfarm={url=\"${URL}\"}}|" .env
 fi
 
 if [[ -z $STORAGE ]]; then
@@ -65,14 +90,18 @@ if [[ -z $STORAGE ]]; then
     -e POSTGRES_DB=$DATABASE \
     -p $PORT:5432 \
     $DAEMON_FLAG \
-    postgres
+    $TEST_FLAG \
+    postgres \
+    postgres -N 100
 else
   docker run --name "$NAME" \
     -e POSTGRES_PASSWORD=$PASSWORD \
     -e POSTGRES_USER=$USERNAME \
     -e POSTGRES_DB=$DATABASE \
     -p $PORT:5432 \
-    -v $STORAGE:/var/lib/postgresql/data
+    -v $STORAGE:/var/lib/postgresql/data \
     $DAEMON_FLAG \
-    postgres
+    $TEST_FLAG \
+    postgres \
+    postgres -N 100
 fi

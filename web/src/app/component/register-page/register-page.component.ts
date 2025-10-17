@@ -45,10 +45,10 @@ export class RegisterPageComponent {
             this.submitting = false;
             return;
         }
-        var newUser = new NewUser(this.firstname, this.lastname, this.username, this.email, this.password);
+        let newUser = new NewUser(this.firstname, this.lastname, this.username, this.email, this.password);
         this.authService.register(newUser).subscribe(res => {
             console.log('user registered: ', res);
-            this.router.navigate(['/']).then(r => {});
+            this.router.navigate(['/']).then(_ => {});
             this.submitting = false;
         });
     }

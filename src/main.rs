@@ -3,9 +3,9 @@ pub mod schema;
 mod api;
 mod validation;
 
-use api::v1::ident;
+use crate::api::v1::ident;
 use api::v1::ident::JwtRefreshFairing;
-use dotenv::dotenv;
+use dotenvy::dotenv;
 use rocket::fs::FileServer;
 use rocket::http::Method;
 use rocket::{launch, routes, Build, Rocket};
@@ -23,6 +23,7 @@ fn rocket() -> Rocket<Build> {
         .mount("/", webapp())
         .mount("/", routes![ident::login_jwt])
 }
+
 fn make_cors() -> Cors {
     CorsOptions::default()
         .allowed_origins(AllowedOrigins::all())

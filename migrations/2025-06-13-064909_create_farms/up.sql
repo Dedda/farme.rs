@@ -7,8 +7,8 @@ CREATE TABLE farms (
 
 CREATE TABLE geolocations (
     id SERIAL NOT NULL PRIMARY KEY,
-    lat FLOAT NOT NULL,
-    lon FLOAT NOT NULL
+    lat REAL NOT NULL,
+    lon REAL NOT NULL
 );
 
 CREATE TABLE farm_locations (

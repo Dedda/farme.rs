@@ -5,6 +5,7 @@ use rocket_sync_db_pools::diesel;
 
 pub mod farm;
 pub mod user;
+pub mod location;
 
 #[database("pgfarm")]
 pub struct FarmDB(diesel::PgConnection);

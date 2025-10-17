@@ -17,6 +17,7 @@ pub struct User {
     pub email: String,
     pub password: String,
     pub sysadmin: i32,
+    pub farmowner: i32,
 }
 
 #[derive(Deserialize)]
@@ -56,7 +57,7 @@ pub struct FarmAdmin {
     pub farm_id: i32,
 }
 
-pub async fn create_user(db: FarmDB, user: NewUser, password: String) -> QueryResult<User> {
+pub async fn create_user(db: &FarmDB, user: NewUser, password: String) -> QueryResult<User> {
     let salt = SaltString::generate(&mut OsRng);
     let password = Argon2::default().hash_password(password.as_bytes(), &salt).unwrap().to_string();
     let user = InsertableUser {
@@ -147,4 +148,13 @@ pub async fn by_username(db: &FarmDB, username: String) -> QueryResult<Option<Us
         .first(conn)
         .optional()
     }).await
+}
+
+pub async fn make_farmowner(db: &FarmDB, user_id: i32) -> QueryResult<()> {
+    db.run(move |conn| {
+        diesel::update(users::table.filter(users::id.eq(user_id)))
+            .set(users::farmowner.eq(1))
+            .execute(conn)
+    }).await?;
+    Ok(())
 }
