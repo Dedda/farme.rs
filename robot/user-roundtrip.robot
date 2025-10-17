@@ -60,8 +60,10 @@ Check New Password And Email
     Click Element   class:loginbtn
     Wait Until Element Is Visible           xpath=//a[text() = "Logout"]
 
-Logout Changed User
-    Wait Until Element Is Visible           xpath=//a[text() = "Logout"]
-    Click Element                           xpath=//a[text() = "Logout"]
+Delete Changed User
+    Wait Until Element Is Visible           xpath=//a[text() = "Profile"]
+    Click Element                           xpath=//a[text() = "Profile"]
+    Wait Until Element Is Visible           xpath=//button[text() = "Delete Account"]
+    Click Element                           xpath=//button[text() = "Delete Account"]
     Wait Until Element Is Visible           xpath=//a[text() = "Login"]
     Close Browser

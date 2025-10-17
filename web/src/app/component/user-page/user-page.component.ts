@@ -15,6 +15,7 @@ import {UserService} from "../../api/user.service";
 export class UserPageComponent implements OnInit {
 
     user: User = new User('', '', '', '');
+    submitting = false;
 
     constructor(
         private authService: AuthService,
@@ -31,5 +32,22 @@ export class UserPageComponent implements OnInit {
                 this.user = user;
             });
         }
+    }
+
+    delete_action(): void {
+        this.submitting = true;
+        this.userService.deleteCurrentUser().subscribe({
+            next: res => {
+                if (res) {
+                    this.authService.logout();
+                    console.log('user deleted');
+                    this.router.navigate(['/']);
+                }
+                this.submitting = false;
+            },
+            error: err => {
+                this.submitting = false;
+            }
+        });
     }
 }

@@ -119,7 +119,7 @@ mod tests {
     use crate::api::v1::farms::{ApiFarm, NewApiFarm};
     use crate::api::v1::test_utils::{create_test_user, create_untracked_client, get_newest_farm, login_user};
     use crate::data::user::make_farmowner;
-    use crate::data::FarmDB;
+    use crate::data::{user, FarmDB};
     use diesel::{ExpressionMethods, RunQueryDsl};
     use rocket::http::{Header, Status};
 
@@ -172,7 +172,6 @@ mod tests {
         // update
 
         // delete
-
         db.run(move |conn| {
             diesel::delete(crate::schema::farm_admins::table)
                 .filter(crate::schema::farm_admins::user_id.eq(user_id))
@@ -182,11 +181,8 @@ mod tests {
                 .filter(crate::schema::farms::id.eq(farm.id))
                 .execute(conn)
                 .expect("failed to delete farm");
-            diesel::delete(crate::schema::users::table)
-                .filter(crate::schema::users::id.eq(user_id))
-                .execute(conn)
-                .expect("Cannot delete user");
         })
         .await;
+        user::delete(&db, user_id).await.expect("failed to delete user");
     }
 }

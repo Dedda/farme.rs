@@ -7,3 +7,10 @@
     <a [routerLink]="['/user', 'change']">Update</a>
     <a [routerLink]="['/user', 'pwchange']">Change password</a>
 </div>
+<div>
+    <button
+            class="deletebtn"
+            [disabled]="submitting"
+            type="button"
+            (click)="delete_action()">Delete Account</button>
+</div>

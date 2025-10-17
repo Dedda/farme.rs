@@ -9,7 +9,7 @@ use crate::validation::{
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::serde::Serialize;
-use rocket::{get, post, routes};
+use rocket::{delete, get, post, routes};
 use serde::Deserialize;
 use std::collections::HashMap;
 
@@ -20,7 +20,8 @@ pub fn routes() -> Vec<rocket::Route> {
         current_user,
         no_current_user,
         change_user,
-        change_password
+        change_password,
+        delete_current_user,
     ]
 }
 
@@ -219,6 +220,12 @@ async fn change_password(
     Ok(())
 }
 
+#[delete("/current-user")]
+async fn delete_current_user(db: FarmDB, user: User) -> ApiResult<()> {
+    user::delete(&db, user.id).await?;
+    Ok(())
+}
+
 #[get("/current-user", format = "json")]
 async fn current_user(user: User) -> Option<Json<ApiUser>> {
     Some(Json(ApiUser::from(user)))
@@ -238,7 +245,6 @@ mod tests {
     use crate::data::user;
     use crate::data::user::check_login;
     use crate::data::FarmDB;
-    use diesel::{ExpressionMethods, RunQueryDsl};
     use rocket::http::Header;
     use rocket::http::{ContentType, Status};
 
@@ -291,7 +297,6 @@ mod tests {
         assert_eq!(user.lastname, "Lastuser");
         assert_eq!(user.username, "testusername");
         assert_eq!(user.email, "test@test.com");
-        let id = user.id;
         let db = FarmDB::get_one(client.rocket())
             .await
             .expect("failed to get db");
@@ -341,7 +346,7 @@ mod tests {
                 })
                 .expect("failed to serialize password change"),
             )
-            .header(Header::new("Authorization", token))
+            .header(Header::new("Authorization", token.clone()))
             .dispatch()
             .await;
         assert_eq!(response.status(), Status::Ok);
@@ -350,12 +355,11 @@ mod tests {
             .expect("failed to check user login");
         assert!(password_check);
         // delete created user
-        db.run(move |conn| {
-            diesel::delete(crate::schema::users::table)
-                .filter(crate::schema::users::id.eq(id))
-                .execute(conn)
-                .expect("Cannot delete user");
-        })
-        .await;
+        let req = client.delete("/api/v1/users/current-user");
+        let response = req
+            .header(Header::new("Authorization", token))
+            .dispatch()
+            .await;
+        assert_eq!(response.status(), Status::Ok);
     }
 }

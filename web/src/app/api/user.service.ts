@@ -28,6 +28,11 @@ export class UserService {
     const h = new HttpHeaders({ 'Content-Type': 'application/json' });
     return this.http.post(Api.API_BASE_URL + '/users/change-password', change, {headers: h}).pipe(map(_res => true));
   }
+
+  public deleteCurrentUser(): Observable<boolean> {
+    const h = new HttpHeaders({ 'Content-Type': 'application/json' });
+    return this.http.delete(Api.API_BASE_URL + '/users/current-user', {headers: h}).pipe(map(_res => true));
+  }
 }
 
 export class PasswordChangeRequest {

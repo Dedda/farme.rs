@@ -34,7 +34,7 @@ export class LoginPageComponent {
         if (!this.validate()) {
             return;
         }
-        var credentials = new LoginCredentials(this.identity, this.password);
+        let credentials = new LoginCredentials(this.identity, this.password);
         this.authService.login(credentials).subscribe({
             next: res => {
                     if (res) {
