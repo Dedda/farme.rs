@@ -67,7 +67,13 @@ Check New Password And Email
     Input Text      id:identity             ${EMAIL}
     Input Password  id:password             ${PASSWORD}
     Click Element   class:loginbtn
-    Wait Until Element Is Visible           xpath=//a[text() = "Logout"]
+    Wait Until Element Is Visible           xpath=//a[text() = "Profile"]
+
+Request Farm Admin Status
+    Click Element                           xpath=//a[text() = "Profile"]
+    Wait Until Element Is Visible           xpath=//h1[text() = "${FIRST NAME} ${LAST NAME}"]
+    Click Element                           class:request-adm-btn
+    Wait Until Element Is Visible           xpath=//p[text() = "Farm Admin"]
 
 Delete Changed User
     Wait Until Element Is Visible           xpath=//a[text() = "Profile"]
