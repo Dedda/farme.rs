@@ -1,5 +1,11 @@
 // @generated automatically by Diesel CLI.
 
+pub mod sql_types {
+    #[derive(diesel::sql_types::SqlType)]
+    #[diesel(postgres_type(name = "farm_admin_status"))]
+    pub struct FarmAdminStatus;
+}
+
 diesel::table! {
     contact (id) {
         id -> Int4,
@@ -68,6 +74,9 @@ diesel::table! {
 }
 
 diesel::table! {
+    use diesel::sql_types::*;
+    use super::sql_types::FarmAdminStatus;
+
     users (id) {
         id -> Int4,
         firstname -> Text,
@@ -76,7 +85,7 @@ diesel::table! {
         email -> Text,
         password -> Text,
         sysadmin -> Int4,
-        farmowner -> Int4,
+        farmowner -> FarmAdminStatus,
     }
 }
 

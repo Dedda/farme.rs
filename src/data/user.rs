@@ -1,13 +1,49 @@
+use std::io::Write;
 use crate::data::farm::Farm;
 use crate::data::FarmDB;
 use crate::schema::{farm_admins, users};
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::SaltString;
 use argon2::{Argon2, PasswordHasher, PasswordVerifier};
+use diesel::deserialize::FromSql;
+use diesel::{AsExpression, FromSqlRow};
+use diesel::pg::{Pg, PgValue};
 use diesel::prelude::*;
+use diesel::serialize::{IsNull, Output, ToSql};
 use rocket::serde::{Deserialize, Serialize};
+use crate::schema;
 
-#[derive(Serialize, Deserialize, Selectable, Identifiable, Queryable)]
+#[derive(Debug, FromSqlRow, PartialEq, Eq, Clone, Serialize, Deserialize, AsExpression)]
+#[diesel(sql_type = schema::sql_types::FarmAdminStatus)]
+pub enum FarmOwnerStatus {
+    NO,
+    YES,
+    REQUESTED,
+}
+
+impl ToSql<schema::sql_types::FarmAdminStatus, Pg> for FarmOwnerStatus {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, Pg>) -> diesel::serialize::Result {
+        match self {
+            FarmOwnerStatus::NO => out.write_all(b"NO")?,
+            FarmOwnerStatus::YES => out.write_all(b"YES")?,
+            FarmOwnerStatus::REQUESTED => out.write_all(b"REQUESTED")?,
+        }
+        Ok(IsNull::No)
+    }
+}
+
+impl FromSql<schema::sql_types::FarmAdminStatus, Pg> for FarmOwnerStatus {
+    fn from_sql(bytes: PgValue<'_>) -> diesel::deserialize::Result<Self> {
+        match bytes.as_bytes() {
+            b"NO" => Ok(FarmOwnerStatus::NO),
+            b"YES" => Ok(FarmOwnerStatus::YES),
+            b"REQUESTED" => Ok(FarmOwnerStatus::REQUESTED),
+            _ => Err("Unrecognized enum variant".into()),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Selectable, Identifiable, Queryable)]
 #[serde(crate = "rocket::serde")]
 pub struct User {
     pub id: i32,
@@ -17,7 +53,7 @@ pub struct User {
     pub email: String,
     pub password: String,
     pub sysadmin: i32,
-    pub farmowner: i32,
+    pub farmowner: FarmOwnerStatus,
 }
 
 #[derive(Deserialize)]
@@ -150,13 +186,22 @@ pub async fn by_username(db: &FarmDB, username: String) -> QueryResult<Option<Us
     }).await
 }
 
-pub async fn make_farmowner(db: &FarmDB, user_id: i32) -> QueryResult<()> {
+async fn set_farmowner_status(db: &FarmDB, user_id: i32, status: FarmOwnerStatus) -> QueryResult<()> {
     db.run(move |conn| {
-        diesel::update(users::table.filter(users::id.eq(user_id)))
-            .set(users::farmowner.eq(1))
+        diesel::update(users::table)
+            .filter(users::id.eq(user_id))
+            .set(users::farmowner.eq(status))
             .execute(conn)
     }).await?;
     Ok(())
+}
+
+pub async fn make_farmowner(db: &FarmDB, user_id: i32) -> QueryResult<()> {
+    set_farmowner_status(db, user_id, FarmOwnerStatus::YES).await
+}
+
+pub async fn request_farm_admin_status(db: &FarmDB, user_id: i32) -> QueryResult<()> {
+    set_farmowner_status(db, user_id, FarmOwnerStatus::REQUESTED).await
 }
 
 pub async fn delete(db: &FarmDB, user_id: i32) -> QueryResult<()> {

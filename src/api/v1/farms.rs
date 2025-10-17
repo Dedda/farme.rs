@@ -1,4 +1,4 @@
-use crate::api::v1::error::{ApiError, ValidationError as ValidationApiError};
+use crate::api::v1::error::{ValidationError as ValidationApiError};
 use crate::api::Result as ApiResult;
 use crate::data::farm::{get_farms_owned_by, Farm, FullFarm, NewFarm};
 use crate::data::location::NewGeoLocation;
@@ -92,11 +92,6 @@ async fn get_full_farm(db: FarmDB, farm_id: i32) -> ApiResult<Json<Option<FullFa
 #[post("/", data = "<farm>")]
 async fn create_farm(db: FarmDB, farm_owner: FarmOwner, farm: Json<NewApiFarm>) -> ApiResult<Json<ApiFarm>> {
     let user = farm_owner.0;
-    if user.farmowner == 0 {
-        return Err(ApiError::MissingPrivilege(String::from(
-            "user must have `farmowner` privilege",
-        )));
-    }
     let new_location = NewGeoLocation {
         lat: farm.lat,
         lon: farm.lon,

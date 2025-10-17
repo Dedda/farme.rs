@@ -1,7 +1,7 @@
 use crate::api::v1::error::{ApiError, ValidationError as ValidationApiError};
 use crate::api::v1::ident::LoginCredentials;
 use crate::api::Result as ApiResult;
-use crate::data::user::{self, check_login, username_by_identity, DefaultUserChange, NewUser, User};
+use crate::data::user::{self, check_login, username_by_identity, DefaultUserChange, FarmOwnerStatus, NewUser, User};
 use crate::data::FarmDB;
 use crate::validation::{
     EmailValidator, PasswordValidator, StringLengthCriteria, StringValidator, Validator,
@@ -22,6 +22,7 @@ pub fn routes() -> Vec<rocket::Route> {
         change_user,
         change_password,
         delete_current_user,
+        request_farm_admin_status,
     ]
 }
 
@@ -107,13 +108,13 @@ fn validate_password(password: &str) -> Option<Vec<String>> {
 }
 
 #[derive(Serialize, Deserialize)]
-struct ApiUser {
+pub struct ApiUser {
     pub id: i32,
     pub firstname: String,
     pub lastname: String,
     pub username: String,
     pub email: String,
-    pub farmowner: i32,
+    pub farmowner: FarmOwnerStatus,
 }
 
 impl From<User> for ApiUser {
@@ -244,14 +245,21 @@ async fn no_current_user() -> Status {
     Status::Unauthorized
 }
 
+#[post("/request-admin")]
+async fn request_farm_admin_status(db: FarmDB, user: User) -> ApiResult<()> {
+    user::request_farm_admin_status(&db, user.id).await?;
+    user::make_farmowner(&db, user.id).await?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::api::v1::test_utils::{create_untracked_client, login_user};
+    use crate::api::v1::test_utils::{create_untracked_client, get_current_user, login_user};
     use crate::api::v1::users::{ApiUser, DeleteAuth};
     use crate::api::v1::users::NewApiUser;
     use crate::api::v1::users::PasswordChangeRequest;
     use crate::data::user;
-    use crate::data::user::check_login;
+    use crate::data::user::{check_login, FarmOwnerStatus};
     use crate::data::FarmDB;
     use rocket::http::Header;
     use rocket::http::{ContentType, Status};
@@ -362,6 +370,15 @@ mod tests {
             .await
             .expect("failed to check user login");
         assert!(password_check);
+        // request farm admin status
+        let req = client.post("/api/v1/users/request-admin");
+        let response = req
+            .header(Header::new("Authorization", token.clone()))
+            .dispatch()
+            .await;
+        assert_eq!(response.status(), Status::Ok);
+        let current_user = get_current_user(&client, token.clone()).await;
+        assert_eq!(current_user.farmowner, FarmOwnerStatus::YES);
         // delete created user
         let req = client.post("/api/v1/users/delete-current");
         let response = req

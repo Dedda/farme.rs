@@ -1,6 +1,6 @@
 use crate::api::Result as ApiResult;
 use crate::data::FarmDB;
-use crate::data::user::{User, check_login, username_by_identity};
+use crate::data::user::{User, check_login, username_by_identity, FarmOwnerStatus};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use lazy_static::lazy_static;
@@ -115,7 +115,7 @@ impl<'r> FromRequest<'r> for FarmOwner {
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let user = try_outcome!(request.guard::<User>().await);
-        if user.farmowner != 0 {
+        if user.farmowner == FarmOwnerStatus::YES {
             Outcome::Success(FarmOwner(user))
         } else {
             Outcome::Forward(Status::Forbidden)
