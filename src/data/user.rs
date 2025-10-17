@@ -158,3 +158,12 @@ pub async fn make_farmowner(db: &FarmDB, user_id: i32) -> QueryResult<()> {
     }).await?;
     Ok(())
 }
+
+pub async fn delete(db: &FarmDB, user_id: i32) -> QueryResult<()> {
+    db.run(move |conn| {
+        diesel::delete(users::table)
+            .filter(users::id.eq(user_id))
+            .execute(conn)
+    }).await?;
+    Ok(())
+}

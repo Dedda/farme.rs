@@ -1,7 +1,7 @@
 use crate::api::v1::error::{ApiError, ValidationError as ValidationApiError};
 use crate::api::v1::ident::LoginCredentials;
 use crate::api::Result as ApiResult;
-use crate::data::user::{self, username_by_identity, DefaultUserChange, NewUser, User};
+use crate::data::user::{self, check_login, username_by_identity, DefaultUserChange, NewUser, User};
 use crate::data::FarmDB;
 use crate::validation::{
     EmailValidator, PasswordValidator, StringLengthCriteria, StringValidator, Validator,
@@ -20,7 +20,8 @@ pub fn routes() -> Vec<rocket::Route> {
         current_user,
         no_current_user,
         change_user,
-        change_password
+        change_password,
+        delete_current_user,
     ]
 }
 
@@ -209,13 +210,27 @@ async fn change_password(
         )]))
         .into());
     }
-    user::check_login(
+    check_login(
         &db,
         user.username.clone(),
         change_request.old_password.clone(),
     )
     .await?;
     user::password_change(&db, user.username, change_request.new_password.clone()).await?;
+    Ok(())
+}
+
+#[derive(Serialize, Deserialize)]
+struct DeleteAuth {
+    password: String,
+}
+
+#[post("/delete-current", data = "<delete_auth>")]
+async fn delete_current_user(db: FarmDB, user: User, delete_auth: Json<DeleteAuth>) -> ApiResult<()> {
+    if !check_login(&db, user.username, delete_auth.into_inner().password).await? {
+        return Err(ApiError::WrongCredentials)
+    }
+    user::delete(&db, user.id).await?;
     Ok(())
 }
 
@@ -232,13 +247,12 @@ async fn no_current_user() -> Status {
 #[cfg(test)]
 mod tests {
     use crate::api::v1::test_utils::{create_untracked_client, login_user};
-    use crate::api::v1::users::ApiUser;
+    use crate::api::v1::users::{ApiUser, DeleteAuth};
     use crate::api::v1::users::NewApiUser;
     use crate::api::v1::users::PasswordChangeRequest;
     use crate::data::user;
     use crate::data::user::check_login;
     use crate::data::FarmDB;
-    use diesel::{ExpressionMethods, RunQueryDsl};
     use rocket::http::Header;
     use rocket::http::{ContentType, Status};
 
@@ -291,7 +305,6 @@ mod tests {
         assert_eq!(user.lastname, "Lastuser");
         assert_eq!(user.username, "testusername");
         assert_eq!(user.email, "test@test.com");
-        let id = user.id;
         let db = FarmDB::get_one(client.rocket())
             .await
             .expect("failed to get db");
@@ -341,7 +354,7 @@ mod tests {
                 })
                 .expect("failed to serialize password change"),
             )
-            .header(Header::new("Authorization", token))
+            .header(Header::new("Authorization", token.clone()))
             .dispatch()
             .await;
         assert_eq!(response.status(), Status::Ok);
@@ -350,12 +363,17 @@ mod tests {
             .expect("failed to check user login");
         assert!(password_check);
         // delete created user
-        db.run(move |conn| {
-            diesel::delete(crate::schema::users::table)
-                .filter(crate::schema::users::id.eq(id))
-                .execute(conn)
-                .expect("Cannot delete user");
-        })
-        .await;
+        let req = client.post("/api/v1/users/delete-current");
+        let response = req
+            .body(
+                serde_json::to_string(&DeleteAuth {
+                    password: "na9e8#aKsO".to_string(),
+                })
+                .expect("failed to serialize auth"),
+            )
+            .header(Header::new("Authorization", token))
+            .dispatch()
+            .await;
+        assert_eq!(response.status(), Status::Ok);
     }
 }
