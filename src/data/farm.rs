@@ -2,6 +2,7 @@ use crate::data::FarmDB;
 use crate::schema::{farm_admins, farm_locations, farm_shop_types, farms, geolocations, opening_hours, shop_types};
 use diesel::prelude::*;
 use rocket::serde::Serialize;
+use uuid::Uuid;
 use crate::data::user::{FarmAdmin, User};
 
 #[derive(Serialize, Identifiable, Queryable, Selectable)]
@@ -9,6 +10,7 @@ use crate::data::user::{FarmAdmin, User};
 pub struct Farm {
     pub id: i32,
     pub name: String,
+    pub ext_id: Uuid,
 }
 
 #[derive(Insertable)]
