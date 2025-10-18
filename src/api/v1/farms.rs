@@ -2,16 +2,16 @@ use crate::api::v1::error::{ValidationError as ValidationApiError};
 use crate::api::Result as ApiResult;
 use crate::data::farm::{get_farms_owned_by, Farm, FullFarm, NewFarm};
 use crate::data::location::NewGeoLocation;
-use crate::data::FarmDB;
+use crate::data::{farm, FarmDB};
 use crate::validation::{StringLengthCriteria, StringValidator, Validator};
 use rocket::serde::json::Json;
-use rocket::{get, post};
+use rocket::{delete, get, post};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use crate::api::v1::ident::FarmOwner;
 
 pub fn routes() -> Vec<rocket::Route> {
-    rocket::routes![list_farms, get_farms_near, get_full_farm, create_farm, get_owned]
+    rocket::routes![list_farms, get_farms_near, get_full_farm, create_farm, get_owned, delete_farm]
 }
 
 #[derive(Serialize, Deserialize)]
@@ -109,13 +109,18 @@ async fn get_owned(db: FarmDB, farm_owner: FarmOwner) -> ApiResult<Json<Vec<ApiF
     Ok(Json(farms.into_iter().map(ApiFarm::from).collect()))
 }
 
+#[delete("/<farm_id>")]
+async fn delete_farm(db: FarmDB, farm_id: i32, farm_owner: FarmOwner) -> ApiResult<()> {
+    farm::delete_farm(&db, farm_owner.0.id, farm_id).await?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use crate::api::v1::farms::{ApiFarm, NewApiFarm};
     use crate::api::v1::test_utils::{create_test_user, create_untracked_client, get_newest_farm, login_user};
     use crate::data::user::make_farmowner;
     use crate::data::{user, FarmDB};
-    use diesel::{ExpressionMethods, RunQueryDsl};
     use rocket::http::{Header, Status};
 
     #[tokio::test]
@@ -160,24 +165,17 @@ mod tests {
         // read owned list
         let req = client.get("/api/v1/farms/owned");
         let response = req
-            .header(Header::new("Authorization", token)).dispatch().await;
+            .header(Header::new("Authorization", token.clone())).dispatch().await;
         let api_farms = response.into_json::<Vec<ApiFarm>>().await.expect("failed to deserialize owned farms list");
         assert_eq!(1, api_farms.len());
 
         // update
 
         // delete
-        db.run(move |conn| {
-            diesel::delete(crate::schema::farm_admins::table)
-                .filter(crate::schema::farm_admins::user_id.eq(user_id))
-                .execute(conn)
-                .expect("Failed to delete farm admin");
-            diesel::delete(crate::schema::farms::table)
-                .filter(crate::schema::farms::id.eq(farm.id))
-                .execute(conn)
-                .expect("failed to delete farm");
-        })
-        .await;
+        let req = client.delete(format!("/api/v1/farms/{}", farm.id));
+        let response = req
+            .header(Header::new("Authorization", token)).dispatch().await;
+        assert_eq!(response.status(), Status::Ok);
         user::delete(&db, user_id).await.expect("failed to delete user");
     }
 }

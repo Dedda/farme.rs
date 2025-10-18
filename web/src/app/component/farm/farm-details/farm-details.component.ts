@@ -1,21 +1,42 @@
-import {Component} from '@angular/core';
-import {ActivatedRoute} from '@angular/router';
+import {Component, OnInit} from '@angular/core';
+import {ActivatedRoute, Router} from '@angular/router';
 import {FarmService} from "../../../api/farm.service";
+import {Farm} from "../../../api/models";
 
 @Component({
   selector: 'app-farm-details',
   imports: [],
   templateUrl: './farm-details.component.html',
   styleUrl: './farm-details.component.css',
-  providers: [FarmService, ActivatedRoute]
+  providers: [FarmService]
 })
-export class FarmDetailsComponent {
+export class FarmDetailsComponent implements OnInit {
 
-  title = 'Loading farm...';
+  farm: Farm = new Farm(0, '');
+  submitting = false;
 
-  constructor(farmService: FarmService, route: ActivatedRoute) {
-    farmService.getFull(route.snapshot.params['id']).subscribe(farm => {
-      this.title = farm.name;
+  constructor(private farmService: FarmService, private route: ActivatedRoute, private router: Router) { }
+
+  ngOnInit(): void {
+    this.farmService.getFull(this.route.snapshot.params['id']).subscribe(farm => {
+      this.farm = farm;
     })
+  }
+
+  deleteAction(): void {
+    if (this.submitting) {
+      return;
+    }
+    this.submitting = true;
+    this.farmService.delete(this.farm.id).subscribe({
+      next: res => {
+        this.submitting = false;
+        console.log('farm deleted: ' + res);
+        this.router.navigate(['/farms']);
+      },
+      error: err => {
+        this.submitting = false;
+      }
+  });
   }
 }

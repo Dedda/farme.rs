@@ -13,6 +13,6 @@ CREATE TABLE farm_admins (
     id SERIAL NOT NULL PRIMARY KEY,
     user_id INTEGER NOT NULL,
     farm_id INTEGER NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id),
-    FOREIGN KEY (farm_id) REFERENCES  farms(id)
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (farm_id) REFERENCES farms(id) ON DELETE CASCADE
 );

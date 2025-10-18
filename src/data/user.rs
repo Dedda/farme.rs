@@ -84,7 +84,7 @@ pub struct InsertableUser {
     pub password: String,
 }
 
-#[derive(Identifiable, Queryable, Associations)]
+#[derive(Identifiable, Queryable, Associations, Selectable)]
 #[diesel(belongs_to(User))]
 #[diesel(belongs_to(Farm))]
 pub struct FarmAdmin {

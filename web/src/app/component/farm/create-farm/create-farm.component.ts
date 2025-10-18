@@ -1,8 +1,9 @@
-import { Component } from '@angular/core';
+import {Component, OnInit} from '@angular/core';
 import {FormsModule} from "@angular/forms";
 import {FarmService} from "../../../api/farm.service";
 import {Router} from "@angular/router";
 import {NewFarm} from "../../../api/models";
+import {AuthService} from "../../../auth.service";
 
 @Component({
   selector: 'app-create-farm',
@@ -12,7 +13,7 @@ import {NewFarm} from "../../../api/models";
   templateUrl: './create-farm.component.html',
   styleUrl: './create-farm.component.css'
 })
-export class CreateFarmComponent {
+export class CreateFarmComponent implements OnInit {
 
   farmname: string = '';
   location_override: boolean = false;
@@ -21,7 +22,13 @@ export class CreateFarmComponent {
 
   submitting: boolean = false;
 
-  constructor(private farmService: FarmService, private router: Router) {}
+  constructor(private authService: AuthService, private farmService: FarmService, private router: Router) {}
+
+  ngOnInit() {
+    if (!this.authService.isLoggedIn) {
+      this.router.navigate(['/login']);
+    }
+  }
 
   validate(): boolean {
     return this.farmname.trim().length > 2;
@@ -38,10 +45,11 @@ export class CreateFarmComponent {
       newFarm.lat = this.lat;
       newFarm.lon = this.lon;
     }
+    console.log('creating new farm', newFarm);
     this.farmService.create(newFarm).subscribe(res => {
       console.log('Farm created: ', res);
-      this.router.navigate(['/farms', '' + res.id]).then(_ => {});
       this.submitting = false;
+      this.router.navigate(['/farms', res.id]);
     });
   }
 }

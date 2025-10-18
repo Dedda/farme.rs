@@ -37,4 +37,9 @@ export class FarmService {
   public create(newFarm: NewFarm): Observable<Farm> {
     return this.http.post<Farm>(Api.API_BASE_URL + '/farms', newFarm);
   }
+
+  public delete(id: number): Observable<boolean> {
+      const h = new HttpHeaders({ 'Content-Type': 'application/json' });
+      return this.http.delete<boolean>(Api.API_BASE_URL + '/farms/' + id, {headers: h});
+  }
 }

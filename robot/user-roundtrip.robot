@@ -30,7 +30,7 @@ Login Created User
     Wait Until Element Is Visible           xpath=//a[text() = "Logout"]
 
 Show Profile
-    Click Element                           xpath=//a[text() = "Profile"]
+    keywords.Navigate To User Profile
     Wait Until Element Is Visible           xpath=//h1[text() = "${FIRST NAME} ${LAST NAME}"]
     Wait Until Element Is Visible           xpath=//p[text() = "Username: ${USERNAME}"]
     Wait Until Element Is Visible           xpath=//p[text() = "Email: ${EMAIL}"]
@@ -53,10 +53,6 @@ Change Password
     Click Element                           class:changebtn
     Wait Until Element Is Visible           xpath=//p[text() = "Email: ${EMAIL}"]
 
-Show Farms
-    keywords.Navigate To Farm List
-    Wait Until Element Is Visible           xpath=//h1[contains(text(), "farm-list")]
-
 Logout Created User
     Wait Until Element Is Visible           xpath=//a[text() = "Logout"]
     Click Element                           xpath=//a[text() = "Logout"]
@@ -70,8 +66,7 @@ Check New Password And Email
     Wait Until Element Is Visible           xpath=//a[text() = "Profile"]
 
 Request Farm Admin Status
-    Click Element                           xpath=//a[text() = "Profile"]
-    Wait Until Element Is Visible           xpath=//h1[text() = "${FIRST NAME} ${LAST NAME}"]
+    keywords.Navigate To User Profile
     Click Element                           class:request-adm-btn
     Wait Until Element Is Visible           xpath=//p[text() = "Farm Admin"]
 
