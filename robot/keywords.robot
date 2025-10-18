@@ -22,6 +22,12 @@ Navigate To Login Page
     Click Element                   xpath=//a[text() = "Login"]
     Wait Until Element Is Visible   xpath=//h1[starts-with(text(), "Login")]
 
+Navigate To User Profile
+    Go To           ${INDEX URL}
+    Wait Until Element Is Visible   xpath=//a[text() = "Profile"]
+    Click Element                   xpath=//a[text() = "Profile"]
+    Wait Until Element Is Visible   class:deletebtn
+
 Navigate To Farm List
     Go To           ${INDEX URL}
     Wait Until Element Is Visible       xpath=//a[text() = "Farm list"]

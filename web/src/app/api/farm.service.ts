@@ -40,10 +40,6 @@ export class FarmService {
 
   public delete(id: number): Observable<boolean> {
       const h = new HttpHeaders({ 'Content-Type': 'application/json' });
-      return this.http.delete<boolean>(Api.API_BASE_URL + '/farms/' + id, {headers: h})
-          .pipe(map(response => {
-              const data: any = response;
-              return data;
-          }));
+      return this.http.delete<boolean>(Api.API_BASE_URL + '/farms/' + id, {headers: h});
   }
 }
