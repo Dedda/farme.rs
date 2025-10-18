@@ -1,3 +1,9 @@
 <p>farm-details works!</p>
 
-<h1>{{ title }}</h1>
+<h1>{{ farm.name }}</h1>
+
+<button
+    class="deletebtn"
+    [disabled]="submitting"
+    type="button"
+    (click)="deleteAction()">Delete</button>

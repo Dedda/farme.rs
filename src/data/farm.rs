@@ -2,7 +2,7 @@ use crate::data::FarmDB;
 use crate::schema::{farm_admins, farm_locations, farm_shop_types, farms, geolocations, opening_hours, shop_types};
 use diesel::prelude::*;
 use rocket::serde::Serialize;
-use crate::data::user::User;
+use crate::data::user::{FarmAdmin, User};
 
 #[derive(Serialize, Identifiable, Queryable, Selectable)]
 #[serde(crate = "rocket::serde")]
@@ -173,5 +173,26 @@ pub async fn create_farm(db: &FarmDB, owner: &User, new_farm: NewFarm) -> QueryR
             .values(owner)
             .execute(conn)?;
         Ok(farm)
+    }).await
+}
+
+pub async fn delete_farm(db: &FarmDB, user_id: i32, farm_id: i32) -> QueryResult<bool> {
+    db.run(move |conn| {
+        let owner = farm_admins::table.select(FarmAdmin::as_select())
+            .filter(farm_admins::user_id.eq(user_id))
+            .filter(farm_admins::farm_id.eq(farm_id))
+            .first::<FarmAdmin>(conn)
+            .optional()?;
+        if let Some(owner) = owner {
+            diesel::delete(farm_admins::table)
+                .filter(farm_admins::id.eq(owner.id))
+                .execute(conn)?;
+            diesel::delete(farms::table)
+                .filter(farms::id.eq(farm_id))
+                .execute(conn)?;
+            Ok(true)
+        } else {
+            Ok(false)
+        }
     }).await
 }
