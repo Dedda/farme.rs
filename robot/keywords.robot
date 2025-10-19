@@ -26,10 +26,10 @@ Navigate To User Profile
     Go To           ${INDEX URL}
     Wait Until Element Is Visible   xpath=//a[text() = "Profile"]
     Click Element                   xpath=//a[text() = "Profile"]
-    Wait Until Element Is Visible   class:deletebtn
+    Wait Until Element Is Visible   id:delete-btn
 
 Navigate To Farm List
     Go To           ${INDEX URL}
     Wait Until Element Is Visible       xpath=//a[text() = "Farm list"]
     Click Element                       xpath=//a[text() = "Farm list"]
-    Wait Until Page Contains Element    tag:ul
+    Wait Until Element Is Visible       xpath=//h1[contains(text(), "farm-list")]

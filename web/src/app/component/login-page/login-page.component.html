@@ -2,30 +2,31 @@
     <h1>Login</h1>
 
     <form (ngSubmit)="loginAction()">
-        <div>
-            <label for="identity">Username or password</label>
+        <div class="mb-3">
+            <label for="identity" class="form-label">Username</label>
             <input
                     type="text"
                     id="identity"
                     name="identity"
+                    class="form-control"
                     required
                     [(ngModel)]="identity"/>
         </div>
-        <div>
-            <label for="password">Password</label>
+        <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
             <input
                     type="password"
                     id="password"
                     name="password"
+                    class="form-control"
                     required
                     [(ngModel)]="password"/>
         </div>
-        <div>
-            <button
-                    class="loginbtn"
-                    [disabled]="submitting || !validate()"
-                    type="submit">Login
-            </button>
-        </div>
+        <button
+                id="login-btn"
+                class="btn btn-primary"
+                [disabled]="submitting || !validate()"
+                type="submit">Login
+        </button>
     </form>
 </div>

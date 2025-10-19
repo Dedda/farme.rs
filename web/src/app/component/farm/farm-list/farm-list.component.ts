@@ -11,7 +11,6 @@ import {UserService} from "../../../api/user.service";
   ],
   providers: [FarmService],
   templateUrl: './farm-list.component.html',
-  styleUrl: './farm-list.component.css'
 })
 export class FarmListComponent implements OnInit {
   user: User | null = null;

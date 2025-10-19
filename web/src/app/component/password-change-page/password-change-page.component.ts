@@ -10,8 +10,7 @@ import {PasswordChangeRequest, UserService} from "../../api/user.service";
         ReactiveFormsModule,
         FormsModule
     ],
-    templateUrl: './password-change-page.component.html',
-    styleUrl: './password-change-page.component.css'
+    templateUrl: './password-change-page.component.html'
 })
 export class PasswordChangePageComponent implements OnInit {
 

@@ -12,8 +12,7 @@ import {FormsModule, ReactiveFormsModule} from "@angular/forms";
         ReactiveFormsModule,
         FormsModule
     ],
-    templateUrl: './user-page.component.html',
-    styleUrl: './user-page.component.css'
+    templateUrl: './user-page.component.html'
 })
 export class UserPageComponent implements OnInit {
 

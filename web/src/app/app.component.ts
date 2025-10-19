@@ -9,8 +9,7 @@ import {UserService} from "./api/user.service";
     selector: 'app-root',
     imports: [RouterOutlet, RouterLink, NgIf],
     providers: [FarmService, UserService],
-    templateUrl: './app.component.html',
-    styleUrl: './app.component.css'
+    templateUrl: './app.component.html'
 })
 export class AppComponent {
 

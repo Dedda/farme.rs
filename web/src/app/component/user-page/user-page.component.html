@@ -12,7 +12,8 @@
 </div>
 <div>
     <button
-            class="request-adm-btn"
+            id="request-adm-btn"
+            class="btn btn-primary"
             [disabled]="user.farmowner !== FarmOwnerStatus.NO"
             type="button"
             (click)="request_admin_action()">Request Farm Admin Status</button>
@@ -28,7 +29,8 @@
                 [(ngModel)]="password"/>
     </div>
     <button
-            class="deletebtn"
+            id="delete-btn"
+            class="btn btn-danger"
             [disabled]="submitting"
             type="button"
             (click)="delete_action()">Delete Account</button>

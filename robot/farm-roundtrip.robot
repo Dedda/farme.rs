@@ -20,19 +20,19 @@ Register User
     Input Text      id:email                ${EMAIL}
     Input Password  id:password             ${PASSWORD}
     Input Password  id:confirm-password     ${PASSWORD}
-    Click Element   class:registerbtn
+    Click Element   id:register-btn
     Wait Until Element Is Visible           xpath=//h1[text() = "Hello, farmers"]
 
 Login Created User
     keywords.Navigate To Login Page
     Input Text      id:identity             ${USERNAME}
     Input Password  id:password             ${PASSWORD}
-    Click Element   class:loginbtn
+    Click Element   id:login-btn
     Wait Until Element Is Visible           xpath=//a[text() = "Logout"]
 
 Request Farm Admin Status
     keywords.Navigate To User Profile
-    Click Element                           class:request-adm-btn
+    Click Element                           id:request-adm-btn
     Wait Until Element Is Visible           xpath=//p[text() = "Farm Admin"]
 
 Show Farms
@@ -44,12 +44,12 @@ Create New Farm
     Click Element                           xpath=//a[text() = "Create farm"]
     Wait Until Element Is Visible           xpath=//h1[text() = "Create Farm"]
     Input Text      id:farmname             ${FARM NAME}
-    Click Element                           tag:button
+    Click Element                           xpath=//button[text() = "Create"]
     Wait Until Element Is Visible           xpath=//h1[text() = "${FARM NAME}"]
 
 Delete Farm
-    Wait Until Element Is Visible           class:deletebtn
-    Click Element                           class:deletebtn
+    Wait Until Element Is Visible           id:delete-btn
+    Click Element                           id:delete-btn
     Wait Until Element Is Visible           xpath=//h1[contains(text(), "farm-list")]
 
 Delete Changed User

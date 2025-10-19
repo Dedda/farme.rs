@@ -7,7 +7,6 @@ import {Farm} from "../../../api/models";
   selector: 'app-farm-details',
   imports: [],
   templateUrl: './farm-details.component.html',
-  styleUrl: './farm-details.component.css',
   providers: [FarmService]
 })
 export class FarmDetailsComponent implements OnInit {

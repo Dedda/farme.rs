@@ -19,14 +19,14 @@ Register User
     Input Text      id:email                ${EMAIL}
     Input Password  id:password             ${PASSWORD}
     Input Password  id:confirm-password     ${PASSWORD}
-    Click Element   class:registerbtn
+    Click Element   id:register-btn
     Wait Until Element Is Visible           xpath=//h1[text() = "Hello, farmers"]
 
 Login Created User
     keywords.Navigate To Login Page
     Input Text      id:identity             ${USERNAME}
     Input Password  id:password             ${PASSWORD}
-    Click Element   class:loginbtn
+    Click Element   id:login-btn
     Wait Until Element Is Visible           xpath=//a[text() = "Logout"]
 
 Show Profile
@@ -41,7 +41,7 @@ Change Email
     Set Suite Variable                      ${EMAIL}        robot2@test.com
     Input Text                              id:email        ${EMAIL}
     Input Password  id:password             ${PASSWORD}
-    Click Element                           class:updatebtn
+    Click Element                           xpath=//button[text() = "Update"]
     Wait Until Element Is Visible           xpath=//p[text() = "Email: ${EMAIL}"]
 
 Change Password
@@ -50,7 +50,7 @@ Change Password
     Input Password  id:old_password         ${PASSWORD}
     Set Suite Variable                      ${PASSWORD}     Test!user2
     Input Password  id:new_password         ${PASSWORD}
-    Click Element                           class:changebtn
+    Click Element                           xpath=//button[text() = "Change"]
     Wait Until Element Is Visible           xpath=//p[text() = "Email: ${EMAIL}"]
 
 Logout Created User
@@ -62,12 +62,12 @@ Check New Password And Email
     keywords.Navigate To Login Page
     Input Text      id:identity             ${EMAIL}
     Input Password  id:password             ${PASSWORD}
-    Click Element   class:loginbtn
+    Click Element   id:login-btn
     Wait Until Element Is Visible           xpath=//a[text() = "Profile"]
 
 Request Farm Admin Status
     keywords.Navigate To User Profile
-    Click Element                           class:request-adm-btn
+    Click Element                           id:request-adm-btn
     Wait Until Element Is Visible           xpath=//p[text() = "Farm Admin"]
 
 Delete Changed User

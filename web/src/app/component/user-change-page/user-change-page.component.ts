@@ -11,8 +11,7 @@ import {UserService} from "../../api/user.service";
         ReactiveFormsModule,
         FormsModule
     ],
-  templateUrl: './user-change-page.component.html',
-  styleUrl: './user-change-page.component.css'
+  templateUrl: './user-change-page.component.html'
 })
 export class UserChangePageComponent implements OnInit {
 
