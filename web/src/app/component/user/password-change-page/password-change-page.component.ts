@@ -1,8 +1,8 @@
 import {Component, OnInit} from '@angular/core';
 import {Router} from "@angular/router";
-import {AuthService} from "../../auth.service";
+import {AuthService} from "../../../auth.service";
 import {FormsModule, ReactiveFormsModule} from "@angular/forms";
-import {PasswordChangeRequest, UserService} from "../../api/user.service";
+import {PasswordChangeRequest, UserService} from "../../../api/user.service";
 
 @Component({
     selector: 'app-password-change-page',

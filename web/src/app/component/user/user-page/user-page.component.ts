@@ -1,8 +1,8 @@
 import {Component, OnInit} from '@angular/core';
-import {AuthService} from "../../auth.service";
+import {AuthService} from "../../../auth.service";
 import {Router, RouterLink} from "@angular/router";
-import {FarmOwnerStatus, User} from "../../api/models";
-import {UserService} from "../../api/user.service";
+import {FarmOwnerStatus, User} from "../../../api/models";
+import {UserService} from "../../../api/user.service";
 import {FormsModule, ReactiveFormsModule} from "@angular/forms";
 
 @Component({
