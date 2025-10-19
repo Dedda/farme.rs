@@ -1,3 +1,10 @@
+@import "bootstrap";
+
 main {
   margin-top: 4rem;
+}
+
+.default-link {
+  @extend .link-underline-opacity-25;
+  @extend .link-underline-opacity-100-hover;
 }

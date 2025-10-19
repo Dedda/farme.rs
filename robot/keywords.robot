@@ -32,4 +32,4 @@ Navigate To Farm List
     Go To           ${INDEX URL}
     Wait Until Element Is Visible       xpath=//a[text() = "Farm list"]
     Click Element                       xpath=//a[text() = "Farm list"]
-    Wait Until Element Is Visible       xpath=//h1[contains(text(), "farm-list")]
+    Wait Until Element Is Visible       xpath=//h1[text() = "Farms"]

@@ -30,7 +30,7 @@ fn make_cors() -> Cors {
         .allowed_headers(AllowedHeaders::all())
         .expose_headers(["Authorization"].iter().map(ToString::to_string).collect())
         .allowed_methods(
-            vec![Method::Get, Method::Post]
+            vec![Method::Get, Method::Post, Method::Delete]
                 .into_iter()
                 .map(From::from)
                 .collect()

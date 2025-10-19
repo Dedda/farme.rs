@@ -1,51 +1,56 @@
 <div class="container">
-    <h1>Create Farm</h1>
+    <h1 class="mt-5">Create Farm</h1>
 
     <form (ngSubmit)="createAction()">
         <div class="mb-3">
             <label for="farmname">Farm name</label>
             <input
-            type="text"
-            id="farmname"
-            name="farmname"
-            class="form-control"
-            required
-            [(ngModel)]="farmname"/>
+                    type="text"
+                    id="farmname"
+                    name="farmname"
+                    class="form-control"
+                    required
+                    [(ngModel)]="farmname"/>
         </div>
         <div class="mb-3  form-check">
             <label for="location_override">Add location?</label>
             <input
-                type="checkbox"
-                id="location_override"
-                name="location_override"
-                class="form-check-input"
-                [(ngModel)]="location_override"/>
+                    type="checkbox"
+                    id="location_override"
+                    name="location_override"
+                    class="form-check-input"
+                    [(ngModel)]="location_override"/>
         </div>
-        <div class="mb-3"
-            [hidden]="!location_override">
-            <label for="lat">Latitude</label>
+        <div class="row g-4 align-items-center mb-3" [hidden]="!location_override">
+            <div class="col-auto">
+                <label for="lat">Latitude</label>
+            </div>
+            <div class="col-auto">
+                <input
+                        type="number"
+                        id="lat"
+                        name="lat"
+                        class="form-control"
+                        [(ngModel)]="lat"/>
+            </div>
+            <div class="col-auto">
+                <label for="lon">Longitude</label>
+            </div>
+            <div class="col-auto">
             <input
-                type="number"
-                id="lat"
-                name="lat"
-                class="form-control"
-                [(ngModel)]="lat"/>
+                    type="number"
+                    id="lon"
+                    name="lon"
+                    class="form-control"
+                    [(ngModel)]="lon"/>
+            </div>
         </div>
-        <div
-            [hidden]="!location_override">
-            <label for="lon">Longitude</label>
-            <input
-                type="number"
-                id="lon"
-                name="lon"
-                class="form-control"
-                [(ngModel)]="lon"/>
-        </div>
-        <div>
-            <button
-                    class="btn btn-primary"
-                    [disabled]="submitting || !validate()"
-                    type="submit">Create</button>
-        </div>
-    </form>
+
+    <button
+            id="create-btn"
+            class="btn btn-primary"
+            [disabled]="submitting || !validate()"
+            type="submit">Create
+    </button>
+</form>
 </div>

@@ -37,25 +37,25 @@ Request Farm Admin Status
 
 Show Farms
     keywords.Navigate To Farm List
-    Wait Until Element Is Visible           xpath=//h1[contains(text(), "farm-list")]
+    Wait Until Element Is Visible           xpath=//h1[text() = "Farms"]
 
 Create New Farm
     Wait Until Element Is Visible           xpath=//a[text() = "Create farm"]
     Click Element                           xpath=//a[text() = "Create farm"]
     Wait Until Element Is Visible           xpath=//h1[text() = "Create Farm"]
     Input Text      id:farmname             ${FARM NAME}
-    Click Element                           xpath=//button[text() = "Create"]
+    Click Element                           id:create-btn
     Wait Until Element Is Visible           xpath=//h1[text() = "${FARM NAME}"]
 
 Delete Farm
     Wait Until Element Is Visible           id:delete-btn
     Click Element                           id:delete-btn
-    Wait Until Element Is Visible           xpath=//h1[contains(text(), "farm-list")]
+    Wait Until Element Is Visible           xpath=//h1[text() = "Farms"]
 
 Delete Changed User
     keywords.Navigate To User Profile
-    Wait Until Element Is Visible           xpath=//button[text() = "Delete Account"]
+    Wait Until Element Is Visible           id:delete-btn
     Input Password  id:password             ${PASSWORD}
-    Click Element                           xpath=//button[text() = "Delete Account"]
+    Click Element                           id:delete-btn
     Wait Until Element Is Visible           xpath=//a[text() = "Login"]
     Close Browser
