@@ -9,8 +9,7 @@ import {Router} from "@angular/router";
         FormsModule,
         ReactiveFormsModule
     ],
-  templateUrl: './login-page.component.html',
-  styleUrl: './login-page.component.css'
+  templateUrl: './login-page.component.html'
 })
 export class LoginPageComponent {
 

@@ -6,8 +6,7 @@ import {RouterLink} from "@angular/router";
     imports: [
         RouterLink
     ],
-  templateUrl: './home-page.component.html',
-  styleUrl: './home-page.component.css'
+  templateUrl: './home-page.component.html'
 })
 export class HomePageComponent {
   title = 'farmers';

@@ -9,8 +9,7 @@ import {NewUser} from "../../api/models";
     imports: [
         FormsModule
     ],
-  templateUrl: './register-page.component.html',
-  styleUrl: './register-page.component.css'
+  templateUrl: './register-page.component.html'
 })
 export class RegisterPageComponent {
 

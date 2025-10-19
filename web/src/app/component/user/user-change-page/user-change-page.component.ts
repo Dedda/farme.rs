@@ -1,9 +1,9 @@
 import {Component, OnInit} from '@angular/core';
-import {NewUser} from "../../api/models";
-import {AuthService} from "../../auth.service";
+import {NewUser} from "../../../api/models";
+import {AuthService} from "../../../auth.service";
 import {Router} from "@angular/router";
 import {FormsModule, ReactiveFormsModule} from "@angular/forms";
-import {UserService} from "../../api/user.service";
+import {UserService} from "../../../api/user.service";
 
 @Component({
   selector: 'app-user-change-page',
@@ -11,8 +11,7 @@ import {UserService} from "../../api/user.service";
         ReactiveFormsModule,
         FormsModule
     ],
-  templateUrl: './user-change-page.component.html',
-  styleUrl: './user-change-page.component.css'
+  templateUrl: './user-change-page.component.html'
 })
 export class UserChangePageComponent implements OnInit {
 
