@@ -1,6 +1,10 @@
 <div class="container">
     <h1 class="mt-5">Farms</h1>
 
+    <div class="mb-3">
+        <a class="default-link" [routerLink]="['/farms/map']">Show on map</a>
+    </div>
+
     <div class="mb-3" [hidden]="user === null || user.farmowner !== FarmOwnerStatus.YES">
     <a
             class="btn btn-primary"
