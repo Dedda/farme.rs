@@ -1,5 +1,7 @@
 import {AfterViewInit, Component, OnInit} from '@angular/core';
 import L from './loeaflet-vectorgrid-wrapper';
+import {HttpClient} from "@angular/common/http";
+import { vectorTileStyling } from './vector-tiles-style';
 
 @Component({
   selector: 'app-leaflet-map',
@@ -13,7 +15,8 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     L.marker([47.0559317,8.2909128]) // Dhaka, Bangladesh
   ];
 
-  constructor() {}
+  constructor(private http: HttpClient) { }
+
   ngOnInit() {
 
   }
@@ -22,10 +25,21 @@ export class LeafletMapComponent implements OnInit, AfterViewInit {
     // const baseMapURl = 'http://localhost:3000/switzerland/{z}/{x}/{y}'
     this.map = L.map('map');
 
+    const vectorTileOptions = {
+      // rendererFactory: L.canvas.tile,
+      vectorTileLayerStyles: vectorTileStyling,
+      maxZoom: 20,
+      maxNativeZoom: 15
+    };
+
+    console.log('vec: ', vectorTileOptions);
+
     L.vectorGrid
-        .protobuf('http://localhost:3000/tiles/{z}/{x}/{y}', {
-        })
+        .protobuf('http://localhost:3000/tiles/{z}/{x}/{y}', vectorTileOptions)
         .addTo(this.map);
+    this.map.eachLayer(layer => {
+      console.log(layer);
+    });
   }
 
   private centerMap() {
