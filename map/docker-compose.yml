@@ -1,0 +1,23 @@
+services:
+  martin:
+    image: ghcr.io/maplibre/martin:v0.16.0
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgres://postgres:password@db/db
+    volumes:
+      - ./martin:/files
+    depends_on:
+      - db
+    command: "/files/tiles.mbtiles --webui enable-for-all"
+
+  db:
+    image: postgis/postgis:17-3.5-alpine
+    environment:
+      - POSTGRES_DB=db
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    volumes:
+      # persist PostgreSQL data in a local directory outside of the docker container
+      - ./pg_data:/var/lib/postgresql/data

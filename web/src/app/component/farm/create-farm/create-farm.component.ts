@@ -10,8 +10,7 @@ import {AuthService} from "../../../auth.service";
     imports: [
         FormsModule
     ],
-  templateUrl: './create-farm.component.html',
-  styleUrl: './create-farm.component.css'
+  templateUrl: './create-farm.component.html'
 })
 export class CreateFarmComponent implements OnInit {
 

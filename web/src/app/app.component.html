@@ -1,22 +1,30 @@
+<header>
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+        <div class="container-fluid">
+            <a class="navbar-brand" routerLink="/">Farmers</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-controls"
+                    aria-controls="navbar-controls" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div id="navbar-controls" class="collapse navbar-collapse">
+                <div *ngIf="isLoggedIn();then userarea else login"></div>
+                <ng-template #login>
+                    <ul class="navbar-nav my-2 my-md-0">
+                        <li class="nav-item"><a class="nav-link" routerLink="login">Login</a></li>
+                        <li class="nav-item"><a class="nav-link" routerLink="register">Register</a></li>
+                    </ul>
+                </ng-template>
+                <ng-template #userarea>
+                    <ul class="navbar-nav my-2 my-md-0">
+                        <li class="nav-item"><a class="nav-link" routerLink="user">Profile</a></li>
+                        <li class="nav-item"><a class="nav-link" routerLink="" (click)="logout()">Logout</a></li>
+                    </ul>
+                </ng-template>
+            </div>
+        </div>
+    </nav>
+</header>
+<main class="flex-shrink-0">
+    <router-outlet />
+</main>
 
-<style>
-
-</style>
-
-<div class="header-line">
-    <div class="home-button-area">
-        <a routerLink="/">Farmers</a>
-    </div>
-    <div class="login-area">
-        <div *ngIf="isLoggedIn();then userarea else login"></div>
-        <ng-template #login>
-            <a routerLink="login">Login</a>
-            <a routerLink="register">Register</a>
-        </ng-template>
-        <ng-template #userarea>
-            <a routerLink="user">Profile</a>
-            <a routerLink="" (click)="logout()">Logout</a>
-        </ng-template>
-    </div>
-</div>
-<router-outlet />

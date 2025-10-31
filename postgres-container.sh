@@ -13,6 +13,7 @@ Usage: $0 [options]
 -P <PORT>       Database port for container to publish to host
 -s <PATH>       Path to be mounted as volume for postgres data
 -n <NAME>       Name of container
+-N              Max connections. Will write N-3 to the config to leave some room for extra connections.
 -D              Run container as daemon
 -t              Test mode. Delete container after stopping
 EOF
@@ -37,6 +38,7 @@ DATABASE='farmers'
 PORT=5432
 STORAGE=
 NAME='pgfarm'
+MAX_CONNECTIONS=100
 DAEMON_FLAG=
 TEST_FLAG=
 
@@ -80,7 +82,7 @@ echo "database url is ${URL}"
 
 if [ -n "${WRITE_ENV}" ]; then
   echo 'updating env file...'
-  sed  -i "s|^ROCKET_DATABASES.*$|ROCKET_DATABASES={pgfarm={url=\"${URL}\"}}|" .env
+  sed  -i "s|^ROCKET_DATABASES.*$|ROCKET_DATABASES={pgfarm={url=\"${URL}\",pool_size=$(($MAX_CONNECTIONS-3))}}|" .env
 fi
 
 if [[ -z $STORAGE ]]; then
@@ -92,7 +94,7 @@ if [[ -z $STORAGE ]]; then
     $DAEMON_FLAG \
     $TEST_FLAG \
     postgres \
-    postgres -N 100
+    postgres -N $MAX_CONNECTIONS
 else
   docker run --name "$NAME" \
     -e POSTGRES_PASSWORD=$PASSWORD \
@@ -103,5 +105,5 @@ else
     $DAEMON_FLAG \
     $TEST_FLAG \
     postgres \
-    postgres -N 100
+    postgres -N $MAX_CONNECTIONS
 fi
