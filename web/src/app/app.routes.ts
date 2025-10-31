@@ -8,6 +8,7 @@ import {UserPageComponent} from "./component/user/user-page/user-page.component"
 import {UserChangePageComponent} from "./component/user/user-change-page/user-change-page.component";
 import {PasswordChangePageComponent} from "./component/user/password-change-page/password-change-page.component";
 import {CreateFarmComponent} from "./component/farm/create-farm/create-farm.component";
+import {FarmMapComponent} from "./component/farm/farm-map/farm-map.component";
 
 export const routes: Routes = [
     {path: '', component: HomePageComponent},
@@ -17,6 +18,7 @@ export const routes: Routes = [
     {path: 'user/change', component: UserChangePageComponent},
     {path: 'user/pwchange', component: PasswordChangePageComponent},
     {path: 'farms/create', component: CreateFarmComponent},
+    {path: 'farms/map', component: FarmMapComponent},
     {path: 'farms/:id', component: FarmDetailsComponent},
     {path: 'farms', component: FarmListComponent}
 ];

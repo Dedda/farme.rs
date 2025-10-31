@@ -4,6 +4,7 @@ import {AuthService} from "./auth.service";
 import {NgIf} from "@angular/common";
 import {FarmService} from "./api/farm.service";
 import {UserService} from "./api/user.service";
+import {LeafletMapComponent} from "./widget/leaflet-map/leaflet-map.component";
 
 @Component({
     selector: 'app-root',

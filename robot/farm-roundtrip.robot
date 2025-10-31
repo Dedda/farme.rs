@@ -39,7 +39,13 @@ Show Farms
     keywords.Navigate To Farm List
     Wait Until Element Is Visible           xpath=//h1[text() = "Farms"]
 
+Show Farm Map
+    Wait Until Element Is Visible           xpath=//a[text() = "Show on map"]
+    Click Element                           xpath=//a[text() = "Show on map"]
+    Wait Until Element Is Visible           id:map
+
 Create New Farm
+    keywords.Navigate To Farm List
     Wait Until Element Is Visible           xpath=//a[text() = "Create farm"]
     Click Element                           xpath=//a[text() = "Create farm"]
     Wait Until Element Is Visible           xpath=//h1[text() = "Create Farm"]
