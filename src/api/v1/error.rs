@@ -11,6 +11,8 @@ pub enum ApiError {
     Database(diesel::result::Error),
     WrongCredentials,
     Validation(ValidationError),
+    Base64Decode(base64::DecodeError),
+    NotFound,
 }
 
 impl<'r> Responder<'r, 'static> for ApiError {
@@ -22,6 +24,11 @@ impl<'r> Responder<'r, 'static> for ApiError {
                 let body = serde_json::to_string(&validation).expect("validation");
                 Response::build().status(Status::BadRequest).sized_body(body.len(), Cursor::new(body)).ok()
             },
+            ApiError::Base64Decode(error) => {
+                let body = format!("Invalid base64: {}", error);
+                Response::build().status(Status::BadRequest).sized_body(body.len(), Cursor::new(body)).ok()
+            },
+            ApiError::NotFound => Response::build().status(Status::NotFound).ok()
         }
     }
 }

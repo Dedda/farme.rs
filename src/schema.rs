@@ -45,6 +45,7 @@ diesel::table! {
         id -> Int4,
         name -> Text,
         created -> Timestamp,
+        ext_id -> Uuid,
     }
 }
 
@@ -86,6 +87,7 @@ diesel::table! {
         password -> Text,
         sysadmin -> Int4,
         farmowner -> FarmAdminStatus,
+        ext_id -> Uuid,
     }
 }
 

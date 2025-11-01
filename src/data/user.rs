@@ -11,6 +11,7 @@ use diesel::pg::{Pg, PgValue};
 use diesel::prelude::*;
 use diesel::serialize::{IsNull, Output, ToSql};
 use rocket::serde::{Deserialize, Serialize};
+use uuid::Uuid;
 use crate::schema;
 
 #[derive(Debug, FromSqlRow, PartialEq, Eq, Clone, Serialize, Deserialize, AsExpression)]
@@ -54,6 +55,7 @@ pub struct User {
     pub password: String,
     pub sysadmin: i32,
     pub farmowner: FarmOwnerStatus,
+    pub ext_id: Uuid,
 }
 
 #[derive(Deserialize)]
