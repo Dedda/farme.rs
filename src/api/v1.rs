@@ -4,6 +4,7 @@ mod farms;
 mod users;
 pub mod ident;
 pub mod error;
+mod types;
 
 pub fn mount(rocket: Rocket<Build>) -> Rocket<Build> {
     rocket

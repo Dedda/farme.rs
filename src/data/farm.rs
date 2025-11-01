@@ -2,6 +2,7 @@ use crate::data::FarmDB;
 use crate::schema::{farm_admins, farm_locations, farm_shop_types, farms, geolocations, opening_hours, shop_types};
 use diesel::prelude::*;
 use rocket::serde::Serialize;
+use serde::Deserialize;
 use uuid::Uuid;
 use crate::data::user::{FarmAdmin, User};
 
@@ -36,7 +37,7 @@ pub struct FarmLocation {
     pub location_id: i32,
 }
 
-#[derive(Serialize, Queryable, Selectable)]
+#[derive(Serialize, Deserialize, Queryable, Selectable)]
 #[serde(crate = "rocket::serde")]
 pub struct ShopType {
     pub id: i32,
@@ -69,11 +70,12 @@ pub struct FullFarm {
     pub name: String,
     pub lat: f32,
     pub lon: f32,
+    pub ext_id: Uuid,
     pub shop_types: Vec<ShopType>,
     pub opening_hours: Vec<OpeningHours>
 }
 
-#[derive(Identifiable, Serialize, Queryable, Selectable, Associations)]
+#[derive(Identifiable, Serialize, Deserialize, Queryable, Selectable, Associations)]
 #[diesel(check_for_backend())]
 #[diesel(belongs_to(Farm))]
 #[diesel(table_name = opening_hours)]
@@ -123,6 +125,17 @@ pub async fn get_farms_owned_by(db: &FarmDB, user: &User) -> QueryResult<Vec<Far
     }).await
 }
 
+pub async fn id_from_ext_id(db: &FarmDB, ext_id: Uuid) -> QueryResult<Option<i32>> {
+    db.run(move |conn| {
+        let id: Option<i32> = farms::table
+            .select(farms::id)
+            .filter(farms::ext_id.eq(ext_id))
+            .first(conn)
+            .optional()?;
+        Ok(id)
+    }).await
+}
+
 pub async fn load_full_farm(db: &FarmDB, farm_id: i32) -> QueryResult<Option<FullFarm>> {
     db.run(move |conn| {
         farms::table
@@ -145,6 +158,7 @@ pub async fn load_full_farm(db: &FarmDB, farm_id: i32) -> QueryResult<Option<Ful
             Ok(Some(FullFarm {
                 id: farm_id,
                 name: farm.name,
+                ext_id: farm.ext_id,
                 lat: location.lat,
                 lon: location.lon,
                 shop_types,
