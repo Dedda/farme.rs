@@ -3,7 +3,7 @@ use crate::api::v1::error::{ApiError, ValidationError as ValidationApiError};
 use crate::api::v1::ident::FarmOwner;
 use crate::api::v1::types::ExtId;
 use crate::data::FarmDB;
-use crate::data::farm::{Farm, FullFarm, NewFarm, OpeningHours, ShopType, get_farms_owned_by};
+use crate::data::farm::{Farm, FullFarm, NewFarm, OpeningHours, get_farms_owned_by};
 use crate::data::location::NewGeoLocation;
 use crate::validation::{StringLengthCriteria, StringValidator, Validator};
 use base64::Engine;
@@ -40,13 +40,32 @@ impl From<Farm> for ApiFarm {
 }
 
 #[derive(Serialize, Deserialize)]
+struct ApiOpeningHours {
+    pub farm_id: i32,
+    pub weekday: i32,
+    pub open: chrono::NaiveTime,
+    pub close: chrono::NaiveTime,
+}
+
+impl From<OpeningHours> for ApiOpeningHours {
+    fn from(value: OpeningHours) -> Self {
+        Self {
+            farm_id: value.farm_id,
+            weekday: value.weekday,
+            open: value.open,
+            close: value.close,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
 struct FullApiFarm {
     pub id: String,
     pub name: String,
     pub lat: f32,
     pub lon: f32,
-    pub shop_types: Vec<ShopType>,
-    pub opening_hours: Vec<OpeningHours>,
+    pub shop_types: Vec<String>,
+    pub opening_hours: Vec<ApiOpeningHours>,
 }
 
 impl From<FullFarm> for FullApiFarm {
@@ -56,8 +75,8 @@ impl From<FullFarm> for FullApiFarm {
             name: value.name,
             lat: value.lat,
             lon: value.lon,
-            shop_types: value.shop_types,
-            opening_hours: value.opening_hours,
+            shop_types: value.shop_types.into_iter().map(|t| t.name).collect(),
+            opening_hours: value.opening_hours.into_iter().map(From::from).collect(),
         }
     }
 }
