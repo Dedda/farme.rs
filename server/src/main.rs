@@ -43,7 +43,11 @@ fn webapp() -> FileServer {
         println!("WEBAPP_PATH set. Using webapp path: {}", &path);
         path
     } else {
+        // Very ugly workaround for diverging working directories of `cargo run` and `cargo test`
+        #[cfg(not(test))]
         let default_path = "web/dist/farmers/browser";
+        #[cfg(test)]
+        let default_path = "../web/dist/farmers/browser";
         println!("WEBAPP_PATH not set. Using default webapp path: {}", &default_path);
         default_path.to_string()
     };
