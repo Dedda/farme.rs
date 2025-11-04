@@ -1,6 +1,6 @@
 use std::io::Write;
-use crate::data::farm::Farm;
-use crate::data::FarmDB;
+use crate::farm::Farm;
+use crate::FarmDB;
 use crate::schema::{farm_admins, users};
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::SaltString;
@@ -10,7 +10,7 @@ use diesel::{AsExpression, FromSqlRow};
 use diesel::pg::{Pg, PgValue};
 use diesel::prelude::*;
 use diesel::serialize::{IsNull, Output, ToSql};
-use rocket::serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::schema;
 
@@ -45,7 +45,6 @@ impl FromSql<schema::sql_types::FarmAdminStatus, Pg> for FarmOwnerStatus {
 }
 
 #[derive(Serialize, Deserialize, Clone, Selectable, Identifiable, Queryable)]
-#[serde(crate = "rocket::serde")]
 pub struct User {
     pub id: i32,
     pub firstname: String,
@@ -59,7 +58,6 @@ pub struct User {
 }
 
 #[derive(Deserialize)]
-#[serde(crate = "rocket::serde")]
 pub struct NewUser {
     pub firstname: String,
     pub lastname: String,

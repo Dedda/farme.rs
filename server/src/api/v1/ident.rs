@@ -1,6 +1,6 @@
 use crate::api::Result as ApiResult;
-use crate::data::FarmDB;
-use crate::data::user::{User, check_login, username_by_identity, FarmOwnerStatus};
+use database::FarmDB;
+use database::user::{User, check_login, username_by_identity, FarmOwnerStatus};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use lazy_static::lazy_static;
@@ -85,8 +85,10 @@ pub async fn login_jwt(
     }
 }
 
+pub struct UserLogin(pub User);
+
 #[async_trait]
-impl<'r> FromRequest<'r> for User {
+impl<'r> FromRequest<'r> for UserLogin {
     type Error = ();
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
@@ -96,10 +98,10 @@ impl<'r> FromRequest<'r> for User {
             .get_one("Authorization")
             .and_then(username_from_valid_jwt_token);
         if let Some(username) = username {
-            crate::data::user::by_username(&db, username)
+            database::user::by_username(&db, username)
                 .await
                 .ok()
-                .flatten()
+                .flatten().map(UserLogin)
                 .or_forward(Status::Unauthorized)
         } else {
             Outcome::Forward(Status::Unauthorized)
@@ -114,7 +116,7 @@ impl<'r> FromRequest<'r> for FarmOwner {
     type Error = ();
 
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
-        let user = try_outcome!(request.guard::<User>().await);
+        let user = try_outcome!(request.guard::<UserLogin>().await).0;
         if user.farmowner == FarmOwnerStatus::YES {
             Outcome::Success(FarmOwner(user))
         } else {
@@ -146,8 +148,8 @@ impl Fairing for JwtRefreshFairing {
     }
 
     async fn on_response<'r>(&self, req: &'r Request<'_>, res: &mut Response<'r>) {
-        if let Outcome::Success(user) = User::from_request(req).await
-            && let Ok(token) = create_jwt(user.username)
+        if let Outcome::Success(user) = UserLogin::from_request(req).await
+            && let Ok(token) = create_jwt(user.0.username)
         {
             res.set_raw_header("Authorization", token);
         }

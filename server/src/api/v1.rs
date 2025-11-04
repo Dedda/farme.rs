@@ -16,9 +16,9 @@ pub fn mount(rocket: Rocket<Build>) -> Rocket<Build> {
 #[cfg(test)]
 pub mod test_utils {
     use crate::api::v1::ident::LoginCredentials;
-    use crate::data::farm::Farm;
-    use crate::data::user::{create_user, NewUser, User};
-    use crate::data::FarmDB;
+    use database::farm::Farm;
+    use database::user::{create_user, NewUser, User};
+    use database::FarmDB;
     use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
     use rocket::http::{ContentType, Header, Status};
     use rocket::local::asynchronous::Client;
@@ -81,8 +81,8 @@ pub mod test_utils {
             .await
             .expect("failed to get db");
         db.run(move |conn| {
-            crate::schema::farms::table.select(Farm::as_select())
-                .order_by(crate::schema::farms::created.desc())
+            database::schema::farms::table.select(Farm::as_select())
+                .order_by(database::schema::farms::created.desc())
                 .first::<Farm>(conn)
                 .expect("failed to get farm")
         }).await

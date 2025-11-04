@@ -1,13 +1,11 @@
-use crate::data::FarmDB;
+use crate::FarmDB;
 use crate::schema::{farm_admins, farm_locations, farm_shop_types, farms, geolocations, opening_hours, shop_types};
 use diesel::prelude::*;
-use rocket::serde::Serialize;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 use uuid::Uuid;
-use crate::data::user::{FarmAdmin, User};
+use crate::user::{FarmAdmin, User};
 
 #[derive(Serialize, Identifiable, Queryable, Selectable)]
-#[serde(crate = "rocket::serde")]
 pub struct Farm {
     pub id: i32,
     pub name: String,
@@ -38,7 +36,6 @@ pub struct FarmLocation {
 }
 
 #[derive(Serialize, Deserialize, Queryable, Selectable)]
-#[serde(crate = "rocket::serde")]
 pub struct ShopType {
     pub id: i32,
     pub name: String,
@@ -55,7 +52,6 @@ pub struct FarmShopTypes {
 }
 
 #[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
 pub struct Contact {
     pub id: i32,
     pub email: Option<String>,
@@ -64,7 +60,6 @@ pub struct Contact {
 }
 
 #[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
 pub struct FullFarm {
     pub id: i32,
     pub name: String,
@@ -79,7 +74,6 @@ pub struct FullFarm {
 #[diesel(check_for_backend())]
 #[diesel(belongs_to(Farm))]
 #[diesel(table_name = opening_hours)]
-#[serde(crate = "rocket::serde")]
 pub struct OpeningHours {
     pub id: i32,
     pub farm_id: i32,

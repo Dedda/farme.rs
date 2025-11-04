@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use crate::data::FarmDB;
+use crate::FarmDB;
 use crate::schema::{geolocations, farm_locations};
 
 #[derive(Selectable)]
