@@ -17,8 +17,9 @@ async fn run_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
 
     FarmDB::get_one(&rocket).await
         .expect("database connection")
-        .run(|conn| { conn.run_pending_migrations(MIGRATIONS).expect("diesel migrations"); })
-        .await;
+        .run(|conn| {
+        conn.run_pending_migrations(MIGRATIONS).expect("diesel migrations");
+    }).await;
 
     rocket
 }

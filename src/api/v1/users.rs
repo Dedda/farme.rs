@@ -6,6 +6,8 @@ use crate::data::FarmDB;
 use crate::validation::{
     EmailValidator, PasswordValidator, StringLengthCriteria, StringValidator, Validator,
 };
+use base64::engine::general_purpose::URL_SAFE;
+use base64::Engine;
 use rocket::http::Status;
 use rocket::serde::json::Json;
 use rocket::serde::Serialize;
@@ -109,7 +111,7 @@ fn validate_password(password: &str) -> Option<Vec<String>> {
 
 #[derive(Serialize, Deserialize)]
 pub struct ApiUser {
-    pub id: i32,
+    pub id: String,
     pub firstname: String,
     pub lastname: String,
     pub username: String,
@@ -120,7 +122,7 @@ pub struct ApiUser {
 impl From<User> for ApiUser {
     fn from(u: User) -> Self {
         Self {
-            id: u.id,
+            id: URL_SAFE.encode(u.ext_id),
             firstname: u.firstname,
             lastname: u.lastname,
             username: u.username,
@@ -255,9 +257,9 @@ async fn request_farm_admin_status(db: FarmDB, user: User) -> ApiResult<()> {
 #[cfg(test)]
 mod tests {
     use crate::api::v1::test_utils::{create_untracked_client, get_current_user, login_user};
-    use crate::api::v1::users::{ApiUser, DeleteAuth};
     use crate::api::v1::users::NewApiUser;
     use crate::api::v1::users::PasswordChangeRequest;
+    use crate::api::v1::users::{ApiUser, DeleteAuth};
     use crate::data::user;
     use crate::data::user::{check_login, FarmOwnerStatus};
     use crate::data::FarmDB;
