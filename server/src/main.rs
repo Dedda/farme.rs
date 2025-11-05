@@ -1,5 +1,3 @@
-pub mod data;
-pub mod schema;
 mod api;
 mod validation;
 
@@ -11,12 +9,14 @@ use rocket::http::Method;
 use rocket::{launch, routes, Build, Rocket};
 use rocket_cors::{AllowedHeaders, AllowedOrigins, Cors, CorsOptions};
 use std::env;
+use rocket::fairing::AdHoc;
+use database::FarmDB;
 
 #[launch]
 fn rocket() -> Rocket<Build> {
     dotenv().ok();
     let r = Rocket::build()
-        .attach(data::stage())
+        .attach(stage_database())
         .attach(make_cors())
         .attach(JwtRefreshFairing);
     api::v1::mount(r)
@@ -43,9 +43,31 @@ fn webapp() -> FileServer {
         println!("WEBAPP_PATH set. Using webapp path: {}", &path);
         path
     } else {
+        // Very ugly workaround for diverging working directories of `cargo run` and `cargo test`
+        #[cfg(not(test))]
         let default_path = "web/dist/farmers/browser";
+        #[cfg(test)]
+        let default_path = "../web/dist/farmers/browser";
         println!("WEBAPP_PATH not set. Using default webapp path: {}", &default_path);
         default_path.to_string()
     };
     FileServer::from(webapp_path)
 }
+
+pub fn stage_database() -> AdHoc {
+    AdHoc::on_ignite("Diesel Postgres Stage", |rocket| async {
+        rocket.attach(FarmDB::fairing())
+            .attach(AdHoc::on_ignite("Diesel Migrations", run_migrations))
+    })
+}
+
+async fn run_migrations(rocket: Rocket<Build>) -> Rocket<Build> {
+    FarmDB::get_one(&rocket).await
+        .expect("database connection")
+        .run(|conn| {
+            database::run_migrations(conn);
+        }).await;
+
+    rocket
+}
+

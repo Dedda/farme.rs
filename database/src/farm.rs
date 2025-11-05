@@ -1,13 +1,11 @@
-use crate::data::FarmDB;
+use crate::{DbResult, FarmDB};
 use crate::schema::{farm_admins, farm_locations, farm_shop_types, farms, geolocations, opening_hours, shop_types};
 use diesel::prelude::*;
-use rocket::serde::Serialize;
-use serde::Deserialize;
+use serde::{Serialize, Deserialize};
 use uuid::Uuid;
-use crate::data::user::{FarmAdmin, User};
+use crate::user::{FarmAdmin, User};
 
 #[derive(Serialize, Identifiable, Queryable, Selectable)]
-#[serde(crate = "rocket::serde")]
 pub struct Farm {
     pub id: i32,
     pub name: String,
@@ -38,7 +36,6 @@ pub struct FarmLocation {
 }
 
 #[derive(Serialize, Deserialize, Queryable, Selectable)]
-#[serde(crate = "rocket::serde")]
 pub struct ShopType {
     pub id: i32,
     pub name: String,
@@ -55,7 +52,6 @@ pub struct FarmShopTypes {
 }
 
 #[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
 pub struct Contact {
     pub id: i32,
     pub email: Option<String>,
@@ -64,7 +60,6 @@ pub struct Contact {
 }
 
 #[derive(Serialize)]
-#[serde(crate = "rocket::serde")]
 pub struct FullFarm {
     pub id: i32,
     pub name: String,
@@ -79,7 +74,6 @@ pub struct FullFarm {
 #[diesel(check_for_backend())]
 #[diesel(belongs_to(Farm))]
 #[diesel(table_name = opening_hours)]
-#[serde(crate = "rocket::serde")]
 pub struct OpeningHours {
     pub id: i32,
     pub farm_id: i32,
@@ -95,13 +89,14 @@ pub struct NewFarmAdmin {
     pub farm_id: i32,
 }
 
-pub async fn list_farms(db: &FarmDB) -> QueryResult<Vec<Farm>> {
-    db.run(move |conn| {
+pub async fn list_farms(db: &FarmDB) -> DbResult<Vec<Farm>> {
+    let farms = db.run(move |conn| {
         farms::table.select(Farm::as_select()).load(conn)
-    }).await
+    }).await?;
+    Ok(farms)
 }
 
-pub async fn get_farms_near(db: &FarmDB, lat: f32, lon: f32, radius: f32) -> QueryResult<Vec<Farm>> {
+pub async fn get_farms_near(db: &FarmDB, lat: f32, lon: f32, radius: f32) -> DbResult<Vec<Farm>> {
     db.run(move |conn| {
         let f = farms::table
             .inner_join(farm_locations::table)
@@ -114,7 +109,7 @@ pub async fn get_farms_near(db: &FarmDB, lat: f32, lon: f32, radius: f32) -> Que
     }).await
 }
 
-pub async fn get_farms_owned_by(db: &FarmDB, user: &User) -> QueryResult<Vec<Farm>> {
+pub async fn get_farms_owned_by(db: &FarmDB, user: &User) -> DbResult<Vec<Farm>> {
     let user_id = user.id;
     db.run(move |conn| {
         let f = farms::table
@@ -125,7 +120,7 @@ pub async fn get_farms_owned_by(db: &FarmDB, user: &User) -> QueryResult<Vec<Far
     }).await
 }
 
-pub async fn id_from_ext_id(db: &FarmDB, ext_id: Uuid) -> QueryResult<Option<i32>> {
+pub async fn id_from_ext_id(db: &FarmDB, ext_id: Uuid) -> DbResult<Option<i32>> {
     db.run(move |conn| {
         let id: Option<i32> = farms::table
             .select(farms::id)
@@ -136,7 +131,7 @@ pub async fn id_from_ext_id(db: &FarmDB, ext_id: Uuid) -> QueryResult<Option<i32
     }).await
 }
 
-pub async fn load_full_farm(db: &FarmDB, farm_id: i32) -> QueryResult<Option<FullFarm>> {
+pub async fn load_full_farm(db: &FarmDB, farm_id: i32) -> DbResult<Option<FullFarm>> {
     db.run(move |conn| {
         farms::table
             .select(Farm::as_select())
@@ -168,7 +163,7 @@ pub async fn load_full_farm(db: &FarmDB, farm_id: i32) -> QueryResult<Option<Ful
     }).await
 }
 
-pub async fn create_farm(db: &FarmDB, owner: &User, new_farm: NewFarm) -> QueryResult<Farm> {
+pub async fn create_farm(db: &FarmDB, owner: &User, new_farm: NewFarm) -> DbResult<Farm> {
     let owner_id = owner.id;
     db.run(move |conn| {
         let new_id: i32 = diesel::insert_into(farms::table)
@@ -192,7 +187,7 @@ pub async fn create_farm(db: &FarmDB, owner: &User, new_farm: NewFarm) -> QueryR
     }).await
 }
 
-pub async fn delete_farm(db: &FarmDB, user_id: i32, farm_id: i32) -> QueryResult<bool> {
+pub async fn delete_farm(db: &FarmDB, user_id: i32, farm_id: i32) -> DbResult<bool> {
     db.run(move |conn| {
         let owner = farm_admins::table.select(FarmAdmin::as_select())
             .filter(farm_admins::user_id.eq(user_id))

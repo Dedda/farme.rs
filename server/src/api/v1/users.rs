@@ -1,8 +1,8 @@
 use crate::api::v1::error::{ApiError, ValidationError as ValidationApiError};
-use crate::api::v1::ident::LoginCredentials;
+use crate::api::v1::ident::{LoginCredentials, UserLogin};
 use crate::api::Result as ApiResult;
-use crate::data::user::{self, check_login, username_by_identity, DefaultUserChange, FarmOwnerStatus, NewUser, User};
-use crate::data::FarmDB;
+use database::user::{self, check_login, username_by_identity, DefaultUserChange, FarmOwnerStatus, NewUser, User};
+use database::FarmDB;
 use crate::validation::{
     EmailValidator, PasswordValidator, StringLengthCriteria, StringValidator, Validator,
 };
@@ -148,9 +148,10 @@ async fn create_user(db: FarmDB, user: Json<NewApiUser>) -> ApiResult<Json<ApiUs
 }
 
 #[post("/change", data = "<changed>")]
-async fn change_user(db: FarmDB, user: User, changed: Json<NewApiUser>) -> ApiResult<()> {
+async fn change_user(db: FarmDB, user: UserLogin, changed: Json<NewApiUser>) -> ApiResult<()> {
+    let user = user.0;
     let mut changed = changed.into_inner();
-    if !user::check_login(&db, changed.username.clone(), changed.password.clone()).await? {
+    if !check_login(&db, changed.username.clone(), changed.password.clone()).await? {
         return Err(ApiError::WrongCredentials);
     }
     if user.username.ne(&changed.username) {
@@ -203,9 +204,10 @@ struct PasswordChangeRequest {
 #[post("/change-password", data = "<change_request>")]
 async fn change_password(
     db: FarmDB,
-    user: User,
+    user: UserLogin,
     change_request: Json<PasswordChangeRequest>,
 ) -> ApiResult<()> {
+    let user = user.0;
     if let Some(errors) = validate_password(&change_request.new_password) {
         return Err(ValidationApiError::for_fields(HashMap::from([(
             "password".to_string(),
@@ -229,7 +231,8 @@ struct DeleteAuth {
 }
 
 #[post("/delete-current", data = "<delete_auth>")]
-async fn delete_current_user(db: FarmDB, user: User, delete_auth: Json<DeleteAuth>) -> ApiResult<()> {
+async fn delete_current_user(db: FarmDB, user: UserLogin, delete_auth: Json<DeleteAuth>) -> ApiResult<()> {
+    let user = user.0;
     if !check_login(&db, user.username, delete_auth.into_inner().password).await? {
         return Err(ApiError::WrongCredentials)
     }
@@ -238,7 +241,8 @@ async fn delete_current_user(db: FarmDB, user: User, delete_auth: Json<DeleteAut
 }
 
 #[get("/current-user", format = "json")]
-async fn current_user(user: User) -> Option<Json<ApiUser>> {
+async fn current_user(user: UserLogin) -> Option<Json<ApiUser>> {
+    let user = user.0;
     Some(Json(ApiUser::from(user)))
 }
 
@@ -248,7 +252,8 @@ async fn no_current_user() -> Status {
 }
 
 #[post("/request-admin")]
-async fn request_farm_admin_status(db: FarmDB, user: User) -> ApiResult<()> {
+async fn request_farm_admin_status(db: FarmDB, user: UserLogin) -> ApiResult<()> {
+    let user = user.0;
     user::request_farm_admin_status(&db, user.id).await?;
     user::make_farmowner(&db, user.id).await?;
     Ok(())
@@ -256,14 +261,13 @@ async fn request_farm_admin_status(db: FarmDB, user: User) -> ApiResult<()> {
 
 #[cfg(test)]
 mod tests {
-    use crate::api::v1::test_utils::{create_untracked_client, get_current_user, login_user};
+    use crate::api::v1::test_utils::{create_untracked_client, get_current_user, login_user, WithAuthorization};
     use crate::api::v1::users::NewApiUser;
     use crate::api::v1::users::PasswordChangeRequest;
     use crate::api::v1::users::{ApiUser, DeleteAuth};
-    use crate::data::user;
-    use crate::data::user::{check_login, FarmOwnerStatus};
-    use crate::data::FarmDB;
-    use rocket::http::Header;
+    use database::user;
+    use database::user::{check_login, FarmOwnerStatus};
+    use database::FarmDB;
     use rocket::http::{ContentType, Status};
 
     #[test]
@@ -336,7 +340,7 @@ mod tests {
         let req = client.post("/api/v1/users/change");
         let response = req
             .body(serde_json::to_string(&changed_user).expect("failed to serialize change user"))
-            .header(Header::new("Authorization", token))
+            .auth(&token)
             .dispatch()
             .await;
         let token = response
@@ -364,7 +368,7 @@ mod tests {
                 })
                 .expect("failed to serialize password change"),
             )
-            .header(Header::new("Authorization", token.clone()))
+            .auth(&token)
             .dispatch()
             .await;
         assert_eq!(response.status(), Status::Ok);
@@ -375,7 +379,7 @@ mod tests {
         // request farm admin status
         let req = client.post("/api/v1/users/request-admin");
         let response = req
-            .header(Header::new("Authorization", token.clone()))
+            .auth(&token)
             .dispatch()
             .await;
         assert_eq!(response.status(), Status::Ok);
@@ -390,7 +394,7 @@ mod tests {
                 })
                 .expect("failed to serialize auth"),
             )
-            .header(Header::new("Authorization", token))
+            .auth(&token)
             .dispatch()
             .await;
         assert_eq!(response.status(), Status::Ok);

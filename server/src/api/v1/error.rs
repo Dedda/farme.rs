@@ -5,10 +5,11 @@ use rocket::{Request, Response};
 use serde::Serialize;
 use std::collections::HashMap;
 use std::io::Cursor;
+use database::DatabaseError;
 
 #[derive(From)]
 pub enum ApiError {
-    Database(diesel::result::Error),
+    Database(DatabaseError),
     WrongCredentials,
     Validation(ValidationError),
     Base64Decode(base64::DecodeError),

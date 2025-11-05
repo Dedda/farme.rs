@@ -1,6 +1,6 @@
 use std::io::Write;
-use crate::data::farm::Farm;
-use crate::data::FarmDB;
+use crate::farm::Farm;
+use crate::{DbResult, FarmDB};
 use crate::schema::{farm_admins, users};
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::SaltString;
@@ -10,7 +10,7 @@ use diesel::{AsExpression, FromSqlRow};
 use diesel::pg::{Pg, PgValue};
 use diesel::prelude::*;
 use diesel::serialize::{IsNull, Output, ToSql};
-use rocket::serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::schema;
 
@@ -45,7 +45,6 @@ impl FromSql<schema::sql_types::FarmAdminStatus, Pg> for FarmOwnerStatus {
 }
 
 #[derive(Serialize, Deserialize, Clone, Selectable, Identifiable, Queryable)]
-#[serde(crate = "rocket::serde")]
 pub struct User {
     pub id: i32,
     pub firstname: String,
@@ -59,7 +58,6 @@ pub struct User {
 }
 
 #[derive(Deserialize)]
-#[serde(crate = "rocket::serde")]
 pub struct NewUser {
     pub firstname: String,
     pub lastname: String,
@@ -95,7 +93,7 @@ pub struct FarmAdmin {
     pub farm_id: i32,
 }
 
-pub async fn create_user(db: &FarmDB, user: NewUser, password: String) -> QueryResult<User> {
+pub async fn create_user(db: &FarmDB, user: NewUser, password: String) -> DbResult<User> {
     let salt = SaltString::generate(&mut OsRng);
     let password = Argon2::default().hash_password(password.as_bytes(), &salt).unwrap().to_string();
     let user = InsertableUser {
@@ -120,7 +118,7 @@ pub async fn create_user(db: &FarmDB, user: NewUser, password: String) -> QueryR
     }).await
 }
 
-pub async fn default_user_change(db: &FarmDB, user: DefaultUserChange) -> QueryResult<()> {
+pub async fn default_user_change(db: &FarmDB, user: DefaultUserChange) -> DbResult<()> {
     db.run(move |conn| {
         let username = user.username.clone();
         diesel::update(users::table)
@@ -131,7 +129,7 @@ pub async fn default_user_change(db: &FarmDB, user: DefaultUserChange) -> QueryR
     Ok(())
 }
 
-pub async fn password_change(db: &FarmDB, username: String, password: String) -> QueryResult<()> {
+pub async fn password_change(db: &FarmDB, username: String, password: String) -> DbResult<()> {
     let salt = SaltString::generate(&mut OsRng);
     let password = Argon2::default().hash_password(password.as_bytes(), &salt).unwrap().to_string();
     db.run(move |conn| {
@@ -143,7 +141,7 @@ pub async fn password_change(db: &FarmDB, username: String, password: String) ->
     Ok(())
 }
 
-pub async fn check_login(db: &FarmDB, username: String, password: String) -> QueryResult<bool> {
+pub async fn check_login(db: &FarmDB, username: String, password: String) -> DbResult<bool> {
     if let Some(hash) = db.run(move |conn| {
         users::table
             .select(users::password)
@@ -158,7 +156,7 @@ pub async fn check_login(db: &FarmDB, username: String, password: String) -> Que
     }
 }
 
-pub async fn username_by_identity(db: &FarmDB, identity: String) -> QueryResult<Option<String>> {
+pub async fn username_by_identity(db: &FarmDB, identity: String) -> DbResult<Option<String>> {
     let username = if identity.contains("@") {
         let found: Option<String> = db.run(move |conn| {
             users::table
@@ -178,17 +176,18 @@ pub async fn username_by_identity(db: &FarmDB, identity: String) -> QueryResult<
     Ok(Some(username))
 }
 
-pub async fn by_username(db: &FarmDB, username: String) -> QueryResult<Option<User>> {
-    db.run(move |conn| {
+pub async fn by_username(db: &FarmDB, username: String) -> DbResult<Option<User>> {
+    let user = db.run(move |conn| {
     users::table
         .select(User::as_select())
         .filter(users::username.eq(username))
         .first(conn)
         .optional()
-    }).await
+    }).await?;
+    Ok(user)
 }
 
-async fn set_farmowner_status(db: &FarmDB, user_id: i32, status: FarmOwnerStatus) -> QueryResult<()> {
+async fn set_farmowner_status(db: &FarmDB, user_id: i32, status: FarmOwnerStatus) -> DbResult<()> {
     db.run(move |conn| {
         diesel::update(users::table)
             .filter(users::id.eq(user_id))
@@ -198,15 +197,15 @@ async fn set_farmowner_status(db: &FarmDB, user_id: i32, status: FarmOwnerStatus
     Ok(())
 }
 
-pub async fn make_farmowner(db: &FarmDB, user_id: i32) -> QueryResult<()> {
+pub async fn make_farmowner(db: &FarmDB, user_id: i32) -> DbResult<()> {
     set_farmowner_status(db, user_id, FarmOwnerStatus::YES).await
 }
 
-pub async fn request_farm_admin_status(db: &FarmDB, user_id: i32) -> QueryResult<()> {
+pub async fn request_farm_admin_status(db: &FarmDB, user_id: i32) -> DbResult<()> {
     set_farmowner_status(db, user_id, FarmOwnerStatus::REQUESTED).await
 }
 
-pub async fn delete(db: &FarmDB, user_id: i32) -> QueryResult<()> {
+pub async fn delete(db: &FarmDB, user_id: i32) -> DbResult<()> {
     db.run(move |conn| {
         diesel::delete(users::table)
             .filter(users::id.eq(user_id))

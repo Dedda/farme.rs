@@ -16,13 +16,21 @@ pub fn mount(rocket: Rocket<Build>) -> Rocket<Build> {
 #[cfg(test)]
 pub mod test_utils {
     use crate::api::v1::ident::LoginCredentials;
-    use crate::data::farm::Farm;
-    use crate::data::user::{create_user, NewUser, User};
-    use crate::data::FarmDB;
-    use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl, SelectableHelper};
+    use database::user::{create_user, NewUser, User};
+    use database::FarmDB;
     use rocket::http::{ContentType, Header, Status};
-    use rocket::local::asynchronous::Client;
+    use rocket::local::asynchronous::{Client, LocalRequest};
     use crate::api::v1::users::ApiUser;
+
+    pub trait WithAuthorization {
+        fn auth(self, token: &str) -> Self;
+    }
+
+    impl<'r> WithAuthorization for LocalRequest<'r> {
+        fn auth(self, token: &str) -> Self {
+            self.header(Header::new("Authorization", token.to_string()))
+        }
+    }
 
     pub async fn create_untracked_client() -> Client {
         let rocket = crate::rocket()
@@ -74,18 +82,6 @@ pub mod test_utils {
         create_user(&db, user, password.to_string())
             .await
             .expect("failed to create user")
-    }
-
-    pub async fn get_newest_farm(client: &Client) -> Farm {
-        let db = FarmDB::get_one(client.rocket())
-            .await
-            .expect("failed to get db");
-        db.run(move |conn| {
-            crate::schema::farms::table.select(Farm::as_select())
-                .order_by(crate::schema::farms::created.desc())
-                .first::<Farm>(conn)
-                .expect("failed to get farm")
-        }).await
     }
 
     pub async fn get_current_user(client: &Client, token: String) -> ApiUser {
