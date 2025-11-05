@@ -37,7 +37,7 @@ pub struct LoginCredentials {
     pub password: String,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Claims {
     pub subject_id: String,
     exp: usize,
