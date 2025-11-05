@@ -261,14 +261,13 @@ async fn request_farm_admin_status(db: FarmDB, user: UserLogin) -> ApiResult<()>
 
 #[cfg(test)]
 mod tests {
-    use crate::api::v1::test_utils::{create_untracked_client, get_current_user, login_user};
+    use crate::api::v1::test_utils::{create_untracked_client, get_current_user, login_user, WithAuthorization};
     use crate::api::v1::users::NewApiUser;
     use crate::api::v1::users::PasswordChangeRequest;
     use crate::api::v1::users::{ApiUser, DeleteAuth};
     use database::user;
     use database::user::{check_login, FarmOwnerStatus};
     use database::FarmDB;
-    use rocket::http::Header;
     use rocket::http::{ContentType, Status};
 
     #[test]
@@ -341,7 +340,7 @@ mod tests {
         let req = client.post("/api/v1/users/change");
         let response = req
             .body(serde_json::to_string(&changed_user).expect("failed to serialize change user"))
-            .header(Header::new("Authorization", token))
+            .auth(&token)
             .dispatch()
             .await;
         let token = response
@@ -369,7 +368,7 @@ mod tests {
                 })
                 .expect("failed to serialize password change"),
             )
-            .header(Header::new("Authorization", token.clone()))
+            .auth(&token)
             .dispatch()
             .await;
         assert_eq!(response.status(), Status::Ok);
@@ -380,7 +379,7 @@ mod tests {
         // request farm admin status
         let req = client.post("/api/v1/users/request-admin");
         let response = req
-            .header(Header::new("Authorization", token.clone()))
+            .auth(&token)
             .dispatch()
             .await;
         assert_eq!(response.status(), Status::Ok);
@@ -395,7 +394,7 @@ mod tests {
                 })
                 .expect("failed to serialize auth"),
             )
-            .header(Header::new("Authorization", token))
+            .auth(&token)
             .dispatch()
             .await;
         assert_eq!(response.status(), Status::Ok);

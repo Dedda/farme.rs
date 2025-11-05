@@ -9,7 +9,6 @@ database = { path = "../database" }
 base64 = "0.22.1"
 chrono = { version = "0.4.41", features = ["serde"] }
 derive_more = { version = "2.0", features = ["from"] }
-diesel = { version = "2.2.10", features = ["postgres", "chrono", "uuid"] }
 dotenvy = "0.15"
 itertools = "0.14.0"
 jsonwebtoken = "9.3.1"

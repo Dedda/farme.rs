@@ -526,7 +526,6 @@ dependencies = [
  "chrono",
  "database",
  "derive_more",
- "diesel",
  "dotenvy",
  "itertools",
  "jsonwebtoken",

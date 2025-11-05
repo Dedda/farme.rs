@@ -1,5 +1,5 @@
 use diesel::prelude::*;
-use crate::FarmDB;
+use crate::{DbResult, FarmDB};
 use crate::schema::{geolocations, farm_locations};
 
 #[derive(Selectable)]
@@ -31,7 +31,7 @@ struct NewFarmLocation {
     location_id: i32,
 }
 
-pub async fn add_new_location_to_farm(db: &FarmDB, location: NewGeoLocation, farm_id: i32) -> QueryResult<()> {
+pub async fn add_new_location_to_farm(db: &FarmDB, location: NewGeoLocation, farm_id: i32) -> DbResult<()> {
     db.run(move |conn| {
         let new_id: i32 = diesel::insert_into(geolocations::table)
             .values(location)

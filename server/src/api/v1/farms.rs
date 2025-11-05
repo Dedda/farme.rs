@@ -183,12 +183,10 @@ async fn delete_farm(db: FarmDB, farm_id: ExtId, farm_owner: FarmOwner) -> ApiRe
 #[cfg(test)]
 mod tests {
     use crate::api::v1::farms::{ApiFarm, NewApiFarm};
-    use crate::api::v1::test_utils::{create_test_user, create_untracked_client, get_newest_farm, login_user};
+    use crate::api::v1::test_utils::{create_test_user, create_untracked_client, login_user, WithAuthorization};
     use database::user::make_farmowner;
     use database::{FarmDB, user};
-    use base64::Engine;
-    use base64::engine::general_purpose::URL_SAFE;
-    use rocket::http::{Header, Status};
+    use rocket::http::Status;
 
     #[tokio::test]
     async fn farm_api_crud() {
@@ -215,20 +213,19 @@ mod tests {
         let req = client.post("/api/v1/farms");
         let response = req
             .body(serde_json::to_string(&new_farm).expect("failed to serialize new farm"))
-            .header(Header::new("Authorization", token.clone()))
+            .auth(&token)
             .dispatch()
             .await;
         assert_eq!(response.status(), Status::Ok);
         let farm = response.into_string().await.expect("expected response");
         let farm: ApiFarm = serde_json::from_str(farm.as_str()).expect("expected valid farm");
         assert_eq!("F farm_api_crud", farm.name);
-        let farm = get_newest_farm(&client).await;
 
-        let ext_id = URL_SAFE.encode(farm.ext_id);
+        let ext_id = farm.id;
         // read
         let req = client.get(format!("/api/v1/farms/{}", ext_id));
         let response = req
-            .header(Header::new("Authorization", token.clone()))
+            .auth(&token)
             .dispatch()
             .await;
         let api_farm = response
@@ -240,7 +237,7 @@ mod tests {
         // read owned list
         let req = client.get("/api/v1/farms/owned");
         let response = req
-            .header(Header::new("Authorization", token.clone()))
+            .auth(&token)
             .dispatch()
             .await;
         let api_farms = response
@@ -254,7 +251,7 @@ mod tests {
         // delete
         let req = client.delete(format!("/api/v1/farms/{}", ext_id));
         let response = req
-            .header(Header::new("Authorization", token))
+            .auth(&token)
             .dispatch()
             .await;
         assert_eq!(response.status(), Status::Ok);
