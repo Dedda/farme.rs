@@ -109,6 +109,23 @@ fn validate_password(password: &str) -> Option<Vec<String>> {
         .map(|err| err.messages)
 }
 
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub enum ApiFarmOwnerStatus {
+    No,
+    Yes,
+    Requested,
+}
+
+impl From<FarmOwnerStatus> for ApiFarmOwnerStatus {
+    fn from(value: FarmOwnerStatus) -> Self {
+        match value {
+            FarmOwnerStatus::NO => ApiFarmOwnerStatus::No,
+            FarmOwnerStatus::YES => ApiFarmOwnerStatus::Yes,
+            FarmOwnerStatus::REQUESTED => ApiFarmOwnerStatus::Requested,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct ApiUser {
     pub id: String,
@@ -116,7 +133,7 @@ pub struct ApiUser {
     pub lastname: String,
     pub username: String,
     pub email: String,
-    pub farmowner: FarmOwnerStatus,
+    pub farmowner: ApiFarmOwnerStatus,
 }
 
 impl From<User> for ApiUser {
@@ -127,7 +144,7 @@ impl From<User> for ApiUser {
             lastname: u.lastname,
             username: u.username,
             email: u.email,
-            farmowner: u.farmowner,
+            farmowner: ApiFarmOwnerStatus::from(u.farmowner),
         }
     }
 }
@@ -262,11 +279,11 @@ async fn request_farm_admin_status(db: FarmDB, user: UserLogin) -> ApiResult<()>
 #[cfg(test)]
 mod tests {
     use crate::api::v1::test_utils::{create_untracked_client, get_current_user, login_user, WithAuthorization};
-    use crate::api::v1::users::NewApiUser;
+    use crate::api::v1::users::{ApiFarmOwnerStatus, NewApiUser};
     use crate::api::v1::users::PasswordChangeRequest;
     use crate::api::v1::users::{ApiUser, DeleteAuth};
     use database::user;
-    use database::user::{check_login, FarmOwnerStatus};
+    use database::user::check_login;
     use database::FarmDB;
     use rocket::http::{ContentType, Status};
 
@@ -384,7 +401,7 @@ mod tests {
             .await;
         assert_eq!(response.status(), Status::Ok);
         let current_user = get_current_user(&client, token.clone()).await;
-        assert_eq!(current_user.farmowner, FarmOwnerStatus::YES);
+        assert_eq!(current_user.farmowner, ApiFarmOwnerStatus::Yes);
         // delete created user
         let req = client.post("/api/v1/users/delete-current");
         let response = req

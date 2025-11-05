@@ -1,11 +1,10 @@
 use crate::{DbResult, FarmDB};
 use crate::schema::{farm_admins, farm_locations, farm_shop_types, farms, geolocations, opening_hours, shop_types};
 use diesel::prelude::*;
-use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use crate::user::{FarmAdmin, User};
 
-#[derive(Serialize, Identifiable, Queryable, Selectable)]
+#[derive(Identifiable, Queryable, Selectable)]
 pub struct Farm {
     pub id: i32,
     pub name: String,
@@ -35,7 +34,7 @@ pub struct FarmLocation {
     pub location_id: i32,
 }
 
-#[derive(Serialize, Deserialize, Queryable, Selectable)]
+#[derive(Queryable, Selectable)]
 pub struct ShopType {
     pub id: i32,
     pub name: String,
@@ -51,7 +50,6 @@ pub struct FarmShopTypes {
     pub farm_id: i32,
 }
 
-#[derive(Serialize)]
 pub struct Contact {
     pub id: i32,
     pub email: Option<String>,
@@ -59,7 +57,6 @@ pub struct Contact {
     pub address: Option<String>,
 }
 
-#[derive(Serialize)]
 pub struct FullFarm {
     pub id: i32,
     pub name: String,
@@ -70,7 +67,7 @@ pub struct FullFarm {
     pub opening_hours: Vec<OpeningHours>
 }
 
-#[derive(Identifiable, Serialize, Deserialize, Queryable, Selectable, Associations)]
+#[derive(Identifiable, Queryable, Selectable, Associations)]
 #[diesel(check_for_backend())]
 #[diesel(belongs_to(Farm))]
 #[diesel(table_name = opening_hours)]

@@ -31,9 +31,9 @@ export class NewUser {
 }
 
 export enum FarmOwnerStatus {
-    YES = 'YES',
-    NO = 'NO',
-    REQUESTED = 'REQUESTED',
+    YES = 'Yes',
+    NO = 'No',
+    REQUESTED = 'Requested',
 }
 
 export class User {

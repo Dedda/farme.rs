@@ -10,11 +10,10 @@ use diesel::{AsExpression, FromSqlRow};
 use diesel::pg::{Pg, PgValue};
 use diesel::prelude::*;
 use diesel::serialize::{IsNull, Output, ToSql};
-use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::schema;
 
-#[derive(Debug, FromSqlRow, PartialEq, Eq, Clone, Serialize, Deserialize, AsExpression)]
+#[derive(Debug, FromSqlRow, PartialEq, Eq, Clone, AsExpression)]
 #[diesel(sql_type = schema::sql_types::FarmAdminStatus)]
 pub enum FarmOwnerStatus {
     NO,
@@ -44,7 +43,7 @@ impl FromSql<schema::sql_types::FarmAdminStatus, Pg> for FarmOwnerStatus {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Selectable, Identifiable, Queryable)]
+#[derive(Clone, Selectable, Identifiable, Queryable)]
 pub struct User {
     pub id: i32,
     pub firstname: String,
@@ -57,7 +56,6 @@ pub struct User {
     pub ext_id: Uuid,
 }
 
-#[derive(Deserialize)]
 pub struct NewUser {
     pub firstname: String,
     pub lastname: String,
