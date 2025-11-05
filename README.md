@@ -88,6 +88,9 @@ environment and the default output directory of the Angular build will be used i
 ROCKET_DATABASES={pgfarm={url="postgres://farmers:farmers@localhost:5432/farmers"}}
 JWT_SECRET=asdf
 WEBAPP_PATH=web/dist/farmers/browser
+# Only needed for production builds, use your own value. Create for example like this:
+# $ openssl rand -base64 32
+ROCKET_SECRET_KEY=G3SWHLnyRydMHv+58E6dA/u/tGVVlFDe9jceWMKDHKY=
 ```
 
 To configure your Rocket instance, you can change the contents of `Rocket.toml`. Some information about possible options
@@ -98,6 +101,26 @@ startup.
 
 To start the server, you can either run `cargo run` (alternatively with `--release`) or execute the binary created by
 `cargo build` earlier.
+
+### Docker images
+
+This project provides you with a Dockerfile that automatically build and packs the Backend server and webapp part into
+one image. This is the easiest way to build and run the image:
+
+```shell
+docker build -t <IMAGE_NAME> .
+docker run --env-file ./.env --network=host -t -i --rm <IMAGE_NAME>
+```
+
+This will build the whole server and webapp part into one convenient image and then runs it in an interactive terminal.
+That makes it easy to stop with Ctrl-C. The `--rm` makes sure the container gets removed after use since we don't have
+any need for persistent data inside the container because it only runs the server. With `--env-file` we provide the 
+`.env` file explained earlier. Since the docker image will contain a release build of the server, make sure to set the
+`ROCKET_SECRET_KEY` property here. To easily connect to the database server running elsewhere (at least not in the same
+container), this command will use the host network.
+
+Keep in mind that this is just an example and in a real scenario, you would probably want to have a more elaborate
+setup containing all required containers in some kind of orchestration tool.
 
 ## Tests
 
