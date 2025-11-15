@@ -395,6 +395,7 @@ version = "0.1.0"
 dependencies = [
  "argon2",
  "chrono",
+ "derive_more",
  "diesel",
  "diesel_migrations",
  "rocket_sync_db_pools",

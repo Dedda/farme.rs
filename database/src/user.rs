@@ -13,6 +13,8 @@ use diesel::serialize::{IsNull, Output, ToSql};
 use uuid::Uuid;
 use crate::schema;
 
+pub mod settings;
+
 #[derive(Debug, FromSqlRow, PartialEq, Eq, Clone, AsExpression)]
 #[diesel(sql_type = schema::sql_types::FarmAdminStatus)]
 pub enum FarmOwnerStatus {

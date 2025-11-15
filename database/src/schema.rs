@@ -75,6 +75,15 @@ diesel::table! {
 }
 
 diesel::table! {
+    user_settings (id) {
+        id -> Int4,
+        user_id -> Int4,
+        setting_name -> Text,
+        setting_value -> Nullable<Text>,
+    }
+}
+
+diesel::table! {
     use diesel::sql_types::*;
     use super::sql_types::FarmAdminStatus;
 
@@ -99,6 +108,7 @@ diesel::joinable!(farm_locations -> geolocations (location_id));
 diesel::joinable!(farm_shop_types -> farms (farm_id));
 diesel::joinable!(farm_shop_types -> shop_types (shop_type_id));
 diesel::joinable!(opening_hours -> farms (farm_id));
+diesel::joinable!(user_settings -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     contact,
@@ -109,5 +119,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     geolocations,
     opening_hours,
     shop_types,
+    user_settings,
     users,
 );
