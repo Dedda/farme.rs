@@ -9,5 +9,6 @@ chrono = "0.4.41"
 derive_more = { version = "2.0", features = ["from"] }
 diesel = { version = "2.2.10", features = ["postgres", "chrono", "uuid"] }
 diesel_migrations = "2.2.0"
+paste = "1"
 rocket_sync_db_pools = { version = "0.1.0", features = ["diesel_postgres_pool"] }
 uuid = { version = "1.18.1", features = ["v4"] }
